@@ -1,0 +1,35 @@
+# nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# node dependencies
+node_modules
+
+# logs
+logs
+*.log
+
+# misc
+.DS_Store
+.fleet
+.idea
+.vscode
+
+# environment
+.env
+.env.*
+!.env.example
+
+# database
+db.sqlite
+db.sqlite-wal
+db.sqlite-shm
+
+# internal context
+CLAUDE.md
+*.plan.md
+.claude/
