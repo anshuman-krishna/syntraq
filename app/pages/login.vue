@@ -9,6 +9,17 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 
+const demoAccounts = [
+  { label: 'admin', email: 'admin@syntraq.io', password: 'password123' },
+  { label: 'manager', email: 'manager@syntraq.io', password: 'password123' },
+  { label: 'operator', email: 'operator@syntraq.io', password: 'password123' },
+]
+
+function fillDemo(account: typeof demoAccounts[number]) {
+  email.value = account.email
+  password.value = account.password
+}
+
 async function handleLogin() {
   error.value = ''
   const result = await auth.login(email.value, password.value)
@@ -55,8 +66,26 @@ async function handleLogin() {
         </UiButton>
       </form>
 
-      <p class="text-center text-xs text-white/30">
-        demo: admin@syntraq.io / password123
+      <div class="space-y-2">
+        <p class="text-center text-xs text-white/30">demo accounts</p>
+        <div class="flex gap-2">
+          <button
+            v-for="account in demoAccounts"
+            :key="account.email"
+            type="button"
+            class="flex-1 px-2 py-1.5 rounded-lg text-[11px] text-white/40 hover:text-white/70 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200"
+            @click="fillDemo(account)"
+          >
+            {{ account.label }}
+          </button>
+        </div>
+      </div>
+
+      <p class="text-center text-xs text-white/25">
+        don't have an account?
+        <NuxtLink to="/register" class="text-sky-pastel/70 hover:text-sky-pastel transition-colors duration-200">
+          register
+        </NuxtLink>
       </p>
     </div>
   </div>

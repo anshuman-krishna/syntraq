@@ -1,6 +1,18 @@
 <script setup lang="ts">
 const roster = useRosterStore()
+const auth = useAuthStore()
 const { startTutorial } = useTutorials()
+const { getUsersOnRoute, sendPresence } = useRealtime()
+const canEdit = computed(() => auth.hasMinRole('manager'))
+const pageUsers = computed(() => getUsersOnRoute('/roster'))
+
+watch(() => roster.editingShift, (shift) => {
+  if (shift) {
+    sendPresence('editing', shift.id)
+  } else {
+    sendPresence('viewing')
+  }
+})
 
 type ViewMode = 'table' | 'timeline' | '3d'
 const activeView = ref<ViewMode>('table')
@@ -31,7 +43,9 @@ onMounted(() => {
           </button>
         </div>
 
-        <UiButton variant="primary" size="sm">
+        <UiPresence :users="pageUsers" />
+
+        <UiButton v-if="canEdit" variant="primary" size="sm">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>

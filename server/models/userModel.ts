@@ -11,13 +11,14 @@ export const userModel = {
     return db.select().from(users).where(eq(users.email, email)).get()
   },
 
-  create(data: { id: string; email: string; passwordHash: string; name: string; role?: string }) {
-    return db.insert(users).values({
-      id: data.id,
-      email: data.email,
-      passwordHash: data.passwordHash,
-      name: data.name,
-      role: (data.role as 'admin' | 'manager' | 'dispatcher' | 'viewer') ?? 'viewer',
-    }).returning().get()
+  create(data: {
+    id: string
+    email: string
+    passwordHash: string
+    name: string
+    role: 'admin' | 'manager' | 'operator'
+    companyId: string
+  }) {
+    return db.insert(users).values(data).returning().get()
   },
 }

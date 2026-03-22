@@ -3,7 +3,7 @@ import type { User, Session } from 'lucia'
 
 declare module 'h3' {
   interface H3EventContext {
-    user: User | null
+    user: (User & { companyId: string }) | null
     session: Session | null
   }
 }
@@ -27,6 +27,6 @@ export default defineEventHandler(async (event) => {
     appendResponseHeader(event, 'Set-Cookie', lucia.createBlankSessionCookie().serialize())
   }
 
-  event.context.user = user
+  event.context.user = user as (User & { companyId: string }) | null
   event.context.session = session
 })

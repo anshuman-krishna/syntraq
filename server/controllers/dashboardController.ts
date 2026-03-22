@@ -1,22 +1,21 @@
 import type { H3Event } from 'h3'
 import { dashboardService } from '../services/dashboardService'
-
-function requireAuth(event: H3Event) {
-  if (!event.context.user) {
-    throw createError({ statusCode: 401, message: 'not authenticated' })
-  }
-}
+import { insightsService } from '../services/insightsService'
+import { permissionService } from '../services/permissionService'
+import { requireAuth, requirePermission } from '../utils/auth'
 
 export const dashboardController = {
   getStats(event: H3Event) {
-    requireAuth(event)
-    const stats = dashboardService.getStats()
+    const user = requireAuth(event)
+    requirePermission(user, permissionService.canViewDashboard(user), 'view dashboard')
+    const stats = dashboardService.getStats(user.companyId)
     return { stats }
   },
 
   getActivity(event: H3Event) {
-    requireAuth(event)
-    const raw = dashboardService.getActivityFeed()
+    const user = requireAuth(event)
+    requirePermission(user, permissionService.canViewDashboard(user), 'view dashboard')
+    const raw = dashboardService.getActivityFeed(user.companyId)
     const activities = raw.map(a => ({
       id: a.id,
       type: a.type,
@@ -28,9 +27,10 @@ export const dashboardController = {
   },
 
   getOverview(event: H3Event) {
-    requireAuth(event)
-    const stats = dashboardService.getStats()
-    const raw = dashboardService.getActivityFeed()
+    const user = requireAuth(event)
+    requirePermission(user, permissionService.canViewDashboard(user), 'view dashboard')
+    const stats = dashboardService.getStats(user.companyId)
+    const raw = dashboardService.getActivityFeed(user.companyId)
     const activities = raw.map(a => ({
       id: a.id,
       type: a.type,
@@ -38,6 +38,9 @@ export const dashboardController = {
       timestamp: a.createdAt instanceof Date ? a.createdAt.toISOString() : new Date(a.createdAt).toISOString(),
       employeeId: a.employeeId,
     }))
-    return { stats, activities }
+    const insights = permissionService.canViewInsights(user)
+      ? insightsService.generate(user.companyId)
+      : []
+    return { stats, activities, insights }
   },
 }

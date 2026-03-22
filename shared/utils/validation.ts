@@ -9,6 +9,7 @@ export const registerSchema = z.object({
   email: z.string().email().max(255).trim().toLowerCase(),
   password: z.string().min(8).max(128),
   name: z.string().min(1).max(100).trim(),
+  companyName: z.string().min(1).max(100).trim(),
 })
 
 export const shiftUpdateSchema = z.object({

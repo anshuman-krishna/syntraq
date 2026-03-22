@@ -1,5 +1,15 @@
 <script setup lang="ts">
 const sidebar = useSidebarStore()
+const route = useRoute()
+const { startTracking, suggestionRef, getTutorialForRoute } = useTutorials()
+useBehavior()
+const { connected } = useRealtime()
+
+onMounted(() => {
+  startTracking()
+})
+
+const currentTutorialKey = computed(() => getTutorialForRoute(route.path))
 </script>
 
 <template>
@@ -16,6 +26,15 @@ const sidebar = useSidebarStore()
         <slot />
       </div>
     </main>
+
+    <TutorialSuggestion
+      v-if="currentTutorialKey"
+      :ref="(el: any) => { suggestionRef = el }"
+      :tutorial-key="currentTutorialKey"
+    />
+
+    <AiChatButton />
+    <AiChatPanel />
 
     <Transition name="fade">
       <div

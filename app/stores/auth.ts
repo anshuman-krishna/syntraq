@@ -2,7 +2,9 @@ interface AuthUser {
   id: string
   email: string
   name: string
-  role: string
+  role: 'admin' | 'manager' | 'operator'
+  companyId: string
+  companyName: string
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -11,6 +13,15 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false)
 
   const isAuthenticated = computed(() => !!user.value)
+  const isAdmin = computed(() => user.value?.role === 'admin')
+  const isManager = computed(() => user.value?.role === 'manager' || user.value?.role === 'admin')
+  const isOperator = computed(() => !!user.value)
+
+  function hasMinRole(minRole: 'admin' | 'manager' | 'operator'): boolean {
+    const hierarchy = { admin: 3, manager: 2, operator: 1 }
+    const userLevel = hierarchy[user.value?.role ?? 'operator'] ?? 0
+    return userLevel >= hierarchy[minRole]
+  }
 
   async function fetchUser() {
     try {
@@ -40,12 +51,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(email: string, password: string, name: string) {
+  async function register(email: string, password: string, name: string, companyName: string) {
     loading.value = true
     try {
       const data = await $fetch<{ user: AuthUser }>('/api/auth/register', {
         method: 'POST',
-        body: { email, password, name },
+        body: { email, password, name, companyName },
       })
       user.value = data.user
       return { success: true }
@@ -70,6 +81,10 @@ export const useAuthStore = defineStore('auth', () => {
     loading,
     initialized,
     isAuthenticated,
+    isAdmin,
+    isManager,
+    isOperator,
+    hasMinRole,
     fetchUser,
     login,
     register,

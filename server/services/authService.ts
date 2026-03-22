@@ -1,6 +1,7 @@
 import { hash, verify } from '@node-rs/argon2'
 import { generateId } from '../../shared/utils/id'
 import { userModel } from '../models/userModel'
+import { companyModel } from '../models/companyModel'
 import type { RegisterInput, LoginInput } from '../../shared/utils/validation'
 
 export class AppError extends Error {
@@ -28,16 +29,30 @@ export const authService = {
     }
 
     const passwordHash = await hash(input.password, ARGON2_OPTIONS)
-    const id = generateId()
+
+    // first user in a new company = admin
+    const company = companyModel.create({
+      id: generateId(),
+      name: input.companyName,
+    })
 
     const user = userModel.create({
-      id,
+      id: generateId(),
       email: input.email,
       passwordHash,
       name: input.name,
+      role: 'admin',
+      companyId: company.id,
     })
 
-    return { id: user.id, email: user.email, name: user.name, role: user.role }
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      companyId: company.id,
+      companyName: company.name,
+    }
   },
 
   async login(input: LoginInput) {
@@ -51,6 +66,15 @@ export const authService = {
       throw new AppError('invalid email or password', 401)
     }
 
-    return { id: user.id, email: user.email, name: user.name, role: user.role }
+    const company = companyModel.findById(user.companyId)
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      companyId: user.companyId,
+      companyName: company?.name ?? '',
+    }
   },
 }

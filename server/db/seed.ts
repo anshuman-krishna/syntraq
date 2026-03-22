@@ -13,25 +13,46 @@ function id(prefix: string, n: number): string {
 }
 
 async function seed() {
-  // create tables
+  // drop and recreate all tables for clean state
   sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS users (
+    DROP TABLE IF EXISTS replay_events;
+    DROP TABLE IF EXISTS replay_sessions;
+    DROP TABLE IF EXISTS audit_logs;
+    DROP TABLE IF EXISTS workflows;
+    DROP TABLE IF EXISTS behavior_events;
+    DROP TABLE IF EXISTS activities;
+    DROP TABLE IF EXISTS shifts;
+    DROP TABLE IF EXISTS vehicles;
+    DROP TABLE IF EXISTS employees;
+    DROP TABLE IF EXISTS sessions;
+    DROP TABLE IF EXISTS users;
+    DROP TABLE IF EXISTS companies;
+
+    CREATE TABLE companies (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE users (
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'viewer',
+      role TEXT NOT NULL DEFAULT 'operator',
+      company_id TEXT NOT NULL REFERENCES companies(id),
       created_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS sessions (
+    CREATE TABLE sessions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id),
       expires_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS employees (
+    CREATE TABLE employees (
       id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
       name TEXT NOT NULL,
       role TEXT NOT NULL,
       email TEXT NOT NULL,
@@ -41,8 +62,9 @@ async function seed() {
       created_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS vehicles (
+    CREATE TABLE vehicles (
       id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
       name TEXT NOT NULL,
       plate TEXT NOT NULL,
       type TEXT NOT NULL,
@@ -51,8 +73,9 @@ async function seed() {
       created_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS shifts (
+    CREATE TABLE shifts (
       id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
       employee_id TEXT NOT NULL REFERENCES employees(id),
       date TEXT NOT NULL,
       start_time TEXT NOT NULL,
@@ -63,24 +86,72 @@ async function seed() {
       created_at INTEGER NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS activities (
+    CREATE TABLE activities (
       id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
       type TEXT NOT NULL,
       description TEXT NOT NULL,
       employee_id TEXT REFERENCES employees(id),
       created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE behavior_events (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      type TEXT NOT NULL,
+      route TEXT NOT NULL,
+      action TEXT,
+      metadata TEXT,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE workflows (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      name TEXT NOT NULL,
+      description TEXT,
+      steps TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'draft',
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE replay_sessions (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      user_name TEXT NOT NULL,
+      started_at INTEGER NOT NULL,
+      ended_at INTEGER,
+      route TEXT NOT NULL,
+      event_count INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE replay_events (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL REFERENCES replay_sessions(id),
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      type TEXT NOT NULL,
+      route TEXT NOT NULL,
+      action TEXT,
+      metadata TEXT,
+      timestamp INTEGER NOT NULL
+    );
+
+    CREATE TABLE audit_logs (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      action TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT,
+      metadata TEXT,
+      created_at INTEGER NOT NULL
+    );
   `)
 
-  // clear existing data
-  sqlite.exec('DELETE FROM activities')
-  sqlite.exec('DELETE FROM shifts')
-  sqlite.exec('DELETE FROM vehicles')
-  sqlite.exec('DELETE FROM employees')
-  sqlite.exec('DELETE FROM sessions')
-  sqlite.exec('DELETE FROM users')
-
-  // seed admin user
   const passwordHash = await hash('password123', {
     memoryCost: 19456,
     timeCost: 2,
@@ -88,20 +159,40 @@ async function seed() {
     parallelism: 1,
   })
 
+  const companyId = id('cmp', 1)
+
+  // seed company
+  db.insert(schema.companies).values({
+    id: companyId,
+    name: 'syntraq demo',
+  }).run()
+
+  // seed users
   db.insert(schema.users).values({
     id: id('usr', 1),
     email: 'admin@syntraq.io',
     passwordHash,
     name: 'admin user',
     role: 'admin',
+    companyId,
   }).run()
 
   db.insert(schema.users).values({
     id: id('usr', 2),
-    email: 'demo@syntraq.io',
+    email: 'manager@syntraq.io',
     passwordHash,
-    name: 'demo user',
+    name: 'demo manager',
     role: 'manager',
+    companyId,
+  }).run()
+
+  db.insert(schema.users).values({
+    id: id('usr', 3),
+    email: 'operator@syntraq.io',
+    passwordHash,
+    name: 'demo operator',
+    role: 'operator',
+    companyId,
   }).run()
 
   // seed employees
@@ -121,6 +212,7 @@ async function seed() {
   employeeData.forEach((emp, i) => {
     db.insert(schema.employees).values({
       id: id('emp', i + 1),
+      companyId,
       ...emp,
       status: 'active',
     }).run()
@@ -141,6 +233,7 @@ async function seed() {
   vehicleData.forEach((veh, i) => {
     db.insert(schema.vehicles).values({
       id: id('veh', i + 1),
+      companyId,
       ...veh,
     }).run()
   })
@@ -167,6 +260,7 @@ async function seed() {
       shiftCount++
       db.insert(schema.shifts).values({
         id: id('sft', shiftCount),
+        companyId,
         employeeId: id('emp', empIdx + 1),
         date: date.toISOString().split('T')[0],
         startTime: `${String(startHour).padStart(2, '0')}:00`,
@@ -196,6 +290,7 @@ async function seed() {
     const hoursAgo = i * 0.5 + Math.random() * 2
     db.insert(schema.activities).values({
       id: id('act', i + 1),
+      companyId,
       type: activityTypes[i % activityTypes.length],
       description: desc,
       employeeId: i < 8 ? id('emp', (i % 10) + 1) : null,
@@ -203,8 +298,45 @@ async function seed() {
     }).run()
   })
 
+  // seed workflows
+  const sampleWorkflows = [
+    {
+      id: id('wfl', 1),
+      companyId,
+      name: 'pre-trip inspection',
+      description: 'standard vehicle inspection before dispatch',
+      steps: JSON.stringify([
+        { id: 'step-1', name: 'check tire pressure', description: 'all tires within spec', order: 1 },
+        { id: 'step-2', name: 'fluid levels', description: 'oil, coolant, washer fluid', order: 2 },
+        { id: 'step-3', name: 'lights and signals', description: 'headlights, brake lights, turn signals', order: 3 },
+        { id: 'step-4', name: 'safety equipment', description: 'fire extinguisher, first aid kit, triangles', order: 4 },
+        { id: 'step-5', name: 'sign off', description: 'driver signature and timestamp', order: 5 },
+      ]),
+      status: 'active' as const,
+      createdBy: id('usr', 1),
+    },
+    {
+      id: id('wfl', 2),
+      companyId,
+      name: 'new driver onboarding',
+      description: 'checklist for onboarding new drivers',
+      steps: JSON.stringify([
+        { id: 'step-1', name: 'documentation', description: 'license, insurance, certifications', order: 1 },
+        { id: 'step-2', name: 'safety orientation', description: 'company safety policies review', order: 2 },
+        { id: 'step-3', name: 'vehicle familiarization', description: 'assigned unit walkthrough', order: 3 },
+        { id: 'step-4', name: 'route training', description: 'shadow ride with supervisor', order: 4 },
+      ]),
+      status: 'draft' as const,
+      createdBy: id('usr', 1),
+    },
+  ]
+
+  sampleWorkflows.forEach(wf => {
+    db.insert(schema.workflows).values(wf).run()
+  })
+
   // eslint-disable-next-line no-console
-  console.log(`seeded: 2 users, ${employeeData.length} employees, ${vehicleData.length} vehicles, ${shiftCount} shifts, ${activityDescriptions.length} activities`)
+  console.log(`seeded: 1 company, 3 users, ${employeeData.length} employees, ${vehicleData.length} vehicles, ${shiftCount} shifts, ${activityDescriptions.length} activities, ${sampleWorkflows.length} workflows`)
   sqlite.close()
 }
 

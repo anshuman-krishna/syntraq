@@ -50,8 +50,19 @@ export const tutorials: Record<string, Tutorial> = {
   },
 }
 
+// map routes to tutorial keys
+const routeTutorialMap: Record<string, string> = {
+  '/dashboard': 'dashboard',
+  '/roster': 'roster',
+}
+
 export function useTutorials() {
   const tutorialStore = useTutorialStore()
+  const route = useRoute()
+  const auth = useAuthStore()
+  const suggestionRef = ref<{ show: () => void } | null>(null)
+  let idleTimer: ReturnType<typeof setTimeout> | null = null
+  let checkTimer: ReturnType<typeof setTimeout> | null = null
 
   function startTutorial(key: string) {
     const tutorial = tutorials[key]
@@ -65,5 +76,66 @@ export function useTutorials() {
     return tutorial ? tutorialStore.isTutorialCompleted(tutorial.id) : false
   }
 
-  return { startTutorial, isTutorialCompleted, tutorials }
+  function getTutorialForRoute(path: string): string | null {
+    return routeTutorialMap[path] ?? null
+  }
+
+  function resetIdleTimer() {
+    if (idleTimer) clearTimeout(idleTimer)
+    idleTimer = setTimeout(() => {
+      suggestForCurrentRoute()
+    }, 30_000)
+  }
+
+  function suggestForCurrentRoute() {
+    const key = getTutorialForRoute(route.path)
+    if (!key || isTutorialCompleted(key) || tutorialStore.isActive) return
+    suggestionRef.value?.show()
+  }
+
+  async function checkAdaptiveSuggestion() {
+    if (!auth.isAuthenticated) return
+    const key = getTutorialForRoute(route.path)
+    if (!key || isTutorialCompleted(key) || tutorialStore.isActive) return
+
+    try {
+      const data = await $fetch<{ suggest: boolean }>('/api/behavior/suggest-tutorial', {
+        params: { route: route.path },
+      })
+      if (data.suggest) {
+        suggestionRef.value?.show()
+      }
+    } catch {
+      // non-critical
+    }
+  }
+
+  function startTracking() {
+    resetIdleTimer()
+
+    if (import.meta.client) {
+      const events = ['mousemove', 'keydown', 'click', 'scroll']
+      events.forEach(e => window.addEventListener(e, resetIdleTimer, { passive: true }))
+
+      // check backend suggestion after 60 seconds on page
+      checkTimer = setTimeout(() => {
+        checkAdaptiveSuggestion()
+      }, 60_000)
+
+      onBeforeUnmount(() => {
+        events.forEach(e => window.removeEventListener(e, resetIdleTimer))
+        if (idleTimer) clearTimeout(idleTimer)
+        if (checkTimer) clearTimeout(checkTimer)
+      })
+    }
+  }
+
+  return {
+    startTutorial,
+    isTutorialCompleted,
+    getTutorialForRoute,
+    startTracking,
+    suggestionRef,
+    tutorials,
+  }
 }

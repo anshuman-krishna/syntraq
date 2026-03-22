@@ -1,6 +1,8 @@
 import type { H3Event } from 'h3'
 import { lucia } from '../db/auth'
 import { authService, AppError } from '../services/authService'
+import { auditService } from '../services/auditService'
+import { companyModel } from '../models/companyModel'
 import { loginSchema, registerSchema } from '../../shared/utils/validation'
 
 export const authController = {
@@ -16,6 +18,15 @@ export const authController = {
       const user = await authService.register(parsed.data)
       const session = await lucia.createSession(user.id, {})
       appendResponseHeader(event, 'Set-Cookie', lucia.createSessionCookie(session.id).serialize())
+
+      auditService.log({
+        companyId: user.companyId,
+        userId: user.id,
+        action: 'auth.register',
+        entityType: 'user',
+        entityId: user.id,
+      })
+
       return { user }
     } catch (e) {
       if (e instanceof AppError) {
@@ -37,6 +48,14 @@ export const authController = {
       const user = await authService.login(parsed.data)
       const session = await lucia.createSession(user.id, {})
       appendResponseHeader(event, 'Set-Cookie', lucia.createSessionCookie(session.id).serialize())
+
+      auditService.log({
+        companyId: user.companyId,
+        userId: user.id,
+        action: 'auth.login',
+        entityType: 'session',
+      })
+
       return { user }
     } catch (e) {
       if (e instanceof AppError) {
@@ -60,6 +79,18 @@ export const authController = {
     if (!user) {
       throw createError({ statusCode: 401, message: 'not authenticated' })
     }
-    return { user }
+
+    const company = companyModel.findById(user.companyId)
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        companyId: user.companyId,
+        companyName: company?.name ?? '',
+      },
+    }
   },
 }

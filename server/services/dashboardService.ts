@@ -3,10 +3,10 @@ import { vehicleModel } from '../models/vehicleModel'
 import { activityModel } from '../models/activityModel'
 
 export const dashboardService = {
-  getStats() {
+  getStats(companyId: string) {
     const today = new Date().toISOString().split('T')[0]
-    const todayShifts = shiftModel.findByDate(today)
-    const vehicles = vehicleModel.findAll()
+    const todayShifts = shiftModel.findByDate(today, companyId)
+    const vehicles = vehicleModel.findAll(companyId)
 
     const activeShifts = todayShifts.filter(s => s.status === 'active').length
     const scheduledShifts = todayShifts.filter(s => s.status === 'scheduled').length
@@ -26,7 +26,7 @@ export const dashboardService = {
     }
   },
 
-  getActivityFeed(limit = 10) {
-    return activityModel.findRecent(limit)
+  getActivityFeed(companyId: string, limit = 10) {
+    return activityModel.findRecent(companyId, limit)
   },
 }

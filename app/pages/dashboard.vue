@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import type { ActivityEvent } from '@shared/types/roster'
 
+interface Insight {
+  id: string
+  type: 'warning' | 'info' | 'success'
+  title: string
+  description: string
+}
+
 const roster = useRosterStore()
 const { startTutorial } = useTutorials()
+const { onEvent } = useRealtime()
 
 const loading = ref(true)
 const activityLoading = ref(true)
 const activity = ref<ActivityEvent[]>([])
+const insights = ref<Insight[]>([])
 
 const stats = ref({
   activeDrivers: 0,
@@ -67,6 +76,28 @@ function formatTimeAgo(timestamp: string): string {
 interface DashboardResponse {
   stats: typeof stats.value
   activities: ActivityEvent[]
+  insights: Insight[]
+}
+
+const insightStyles: Record<string, { icon: string; border: string; bg: string; text: string }> = {
+  warning: {
+    icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z',
+    border: 'border-peach/20',
+    bg: 'from-peach/5 to-transparent',
+    text: 'text-peach/70',
+  },
+  info: {
+    icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+    border: 'border-sky-pastel/20',
+    bg: 'from-sky-pastel/5 to-transparent',
+    text: 'text-sky-pastel/70',
+  },
+  success: {
+    icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+    border: 'border-mint/20',
+    bg: 'from-mint/5 to-transparent',
+    text: 'text-mint/70',
+  },
 }
 
 onMounted(async () => {
@@ -76,12 +107,28 @@ onMounted(async () => {
     const data = await $fetch<DashboardResponse>('/api/dashboard')
     stats.value = data.stats
     activity.value = data.activities
+    insights.value = data.insights ?? []
   } catch {
     // fallback to empty state
   } finally {
     loading.value = false
     activityLoading.value = false
   }
+
+  // live activity streaming
+  onEvent((event) => {
+    if (event.type === 'shift_created' || event.type === 'shift_updated') {
+      const actionType = event.type === 'shift_created' ? 'shift_created' : 'shift_updated'
+      activity.value.unshift({
+        id: Date.now().toString(),
+        type: actionType,
+        description: `${event.userName} — ${event.type.replace(/_/g, ' ')}`,
+        timestamp: event.timestamp,
+      })
+      // keep list trimmed
+      if (activity.value.length > 20) activity.value.pop()
+    }
+  })
 })
 </script>
 
@@ -128,6 +175,35 @@ onMounted(async () => {
         </UiCard>
       </template>
     </div>
+
+    <div v-if="!loading && insights.length" class="space-y-2">
+      <div
+        v-for="insight in insights"
+        :key="insight.id"
+        class="flex items-start gap-3 p-3 rounded-xl border bg-gradient-to-r"
+        :class="[insightStyles[insight.type]?.border, insightStyles[insight.type]?.bg]"
+      >
+        <svg class="w-4 h-4 mt-0.5 shrink-0" :class="insightStyles[insight.type]?.text" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" :d="insightStyles[insight.type]?.icon" />
+        </svg>
+        <div>
+          <p class="text-sm font-medium" :class="insightStyles[insight.type]?.text">{{ insight.title }}</p>
+          <p class="text-xs text-white/35 mt-0.5">{{ insight.description }}</p>
+        </div>
+      </div>
+    </div>
+
+    <UiCard v-if="!loading" padding="none" class="overflow-hidden">
+      <div class="flex items-center justify-between px-4 pt-4">
+        <h2 class="text-sm font-semibold text-white/70">fleet overview</h2>
+        <span class="text-[10px] text-white/25">interactive 3d view — hover to explore</span>
+      </div>
+      <div class="h-[320px] relative">
+        <ClientOnly>
+          <FleetScene />
+        </ClientOnly>
+      </div>
+    </UiCard>
 
     <div class="grid lg:grid-cols-3 gap-6">
       <UiCard padding="lg" class="lg:col-span-2">

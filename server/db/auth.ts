@@ -15,6 +15,7 @@ export const lucia = new Lucia(adapter, {
     email: attributes.email,
     name: attributes.name,
     role: attributes.role,
+    companyId: attributes.company_id,
   }),
 })
 
@@ -25,6 +26,7 @@ declare module 'lucia' {
       email: string
       name: string
       role: string
+      company_id: string
     }
   }
 }

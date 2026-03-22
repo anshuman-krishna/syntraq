@@ -1,5 +1,7 @@
 <script setup lang="ts">
 const sidebar = useSidebarStore()
+const auth = useAuthStore()
+const { online, pendingCount } = useOfflineQueue()
 const scrolled = ref(false)
 
 function handleScroll() {
@@ -69,6 +71,17 @@ onUnmounted(() => {
         <kbd class="ml-2 px-1 py-0.5 rounded text-[10px] border border-glass-border/50 font-mono">⌘K</kbd>
       </button>
 
+      <Transition name="fade">
+        <div
+          v-if="!online"
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-peach/10 border border-peach/20"
+        >
+          <div class="w-1.5 h-1.5 rounded-full bg-peach" />
+          <span class="text-[10px] text-peach/70">offline</span>
+          <span v-if="pendingCount > 0" class="text-[10px] text-peach/50">· {{ pendingCount }} queued</span>
+        </div>
+      </Transition>
+
       <button
         class="p-2 rounded-lg hover:bg-glass-hover transition-all duration-200 relative"
         aria-label="notifications"
@@ -79,7 +92,15 @@ onUnmounted(() => {
         <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-peach" />
       </button>
 
-      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-sky-pastel/40 to-mint/40 border border-glass-border hover:border-white/20 transition-all duration-200 cursor-pointer" />
+      <div v-if="auth.user" class="flex items-center gap-2">
+        <div class="hidden sm:flex flex-col items-end mr-1">
+          <span class="text-xs text-white/60 leading-tight">{{ auth.user.name }}</span>
+          <span class="text-[10px] text-white/25 leading-tight">{{ auth.user.companyName }}</span>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-sky-pastel/40 to-mint/40 border border-glass-border hover:border-white/20 transition-all duration-200 cursor-pointer flex items-center justify-center">
+          <span class="text-[11px] font-medium text-white/70">{{ auth.user.name.charAt(0).toUpperCase() }}</span>
+        </div>
+      </div>
     </div>
   </nav>
 </template>
