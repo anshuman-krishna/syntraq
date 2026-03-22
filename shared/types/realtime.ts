@@ -6,6 +6,12 @@ export type RealtimeEventType =
   | 'workflow_deleted'
   | 'activity_created'
   | 'presence_update'
+  | 'message_created'
+  | 'comment_created'
+  | 'approval_created'
+  | 'approval_updated'
+  | 'escalation_created'
+  | 'typing_indicator'
 
 export interface RealtimeEvent {
   type: RealtimeEventType

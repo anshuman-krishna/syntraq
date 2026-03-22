@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import { lucia } from '../db/auth'
 import { authService, AppError } from '../services/authService'
 import { auditService } from '../services/auditService'
+import { emailService } from '../services/emailService'
 import { companyModel } from '../models/companyModel'
 import { loginSchema, registerSchema } from '../../shared/utils/validation'
 
@@ -26,6 +27,9 @@ export const authController = {
         entityType: 'user',
         entityId: user.id,
       })
+
+      // send welcome email (non-blocking)
+      emailService.sendWelcome(user.email, user.name, user.companyName).catch(() => {})
 
       return { user }
     } catch (e) {

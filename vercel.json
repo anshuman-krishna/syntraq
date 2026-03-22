@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npx nuxi build",
+  "outputDirectory": ".output",
+  "framework": "nuxt",
+  "regions": ["iad1"],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

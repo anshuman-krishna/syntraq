@@ -3,6 +3,7 @@ import { workflowService } from '../services/workflowService'
 import { permissionService } from '../services/permissionService'
 import { auditService } from '../services/auditService'
 import { realtimeService } from '../services/realtimeService'
+import { usageService } from '../services/usageService'
 import { AppError } from '../services/authService'
 import { requireAuth, requirePermission } from '../utils/auth'
 
@@ -32,6 +33,8 @@ export const workflowController = {
   async create(event: H3Event) {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageWorkflows(user), 'manage workflows')
+    usageService.checkWorkflowLimit(user.companyId)
+
     const body = await readBody(event)
 
     if (!body?.name || typeof body.name !== 'string' || body.name.length > 100) {

@@ -100,6 +100,20 @@ async function saveShift() {
             save changes
           </UiButton>
         </div>
+
+        <div class="pt-4 border-t border-glass-border/30">
+          <CollaborationApprovalBadge
+            entity-type="shift"
+            :entity-id="roster.editingShift.id"
+          />
+        </div>
+
+        <div class="pt-2">
+          <CollaborationCommentThread
+            entity-type="shift"
+            :entity-id="roster.editingShift.id"
+          />
+        </div>
       </div>
     </div>
   </Transition>

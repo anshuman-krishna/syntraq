@@ -5,9 +5,10 @@ export const useUiStore = defineStore('ui', () => {
   const commandOpen = ref(false)
   const globalLoading = ref(false)
 
-  function addToast(type: ToastType, message: string, duration = 3000) {
+  function addToast(opts: { type: ToastType; message: string; duration?: number }) {
     const id = Math.random().toString(36).substring(2, 8)
-    toasts.value.push({ id, type, message, duration })
+    const duration = opts.duration ?? 3000
+    toasts.value.push({ id, type: opts.type, message: opts.message, duration })
 
     if (duration > 0) {
       setTimeout(() => removeToast(id), duration)

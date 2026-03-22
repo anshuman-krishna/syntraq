@@ -1,4 +1,4 @@
-const publicRoutes = ['/', '/login']
+const publicRoutes = ['/', '/login', '/register', '/features', '/pricing', '/about', '/billing/success', '/billing/cancel']
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuthStore()

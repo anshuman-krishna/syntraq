@@ -36,6 +36,8 @@ const currentTutorialKey = computed(() => getTutorialForRoute(route.path))
     <AiChatButton />
     <AiChatPanel />
 
+    <OnboardingWizard />
+
     <Transition name="fade">
       <div
         v-if="sidebar.mobileOpen"

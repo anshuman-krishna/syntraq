@@ -29,7 +29,7 @@ export const shiftModel = {
       .all()
   },
 
-  findByStatus(status: string, companyId: string) {
+  findByStatus(status: 'scheduled' | 'active' | 'completed' | 'cancelled', companyId: string) {
     return db.select().from(shifts)
       .where(and(eq(shifts.status, status), eq(shifts.companyId, companyId)))
       .all()

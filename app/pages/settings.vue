@@ -1,6 +1,60 @@
 <script setup lang="ts">
-const profileName = ref('john doe')
-const profileEmail = ref('john@company.com')
+import type { Plan, Usage, PlanLimits } from '@shared/types/plan'
+
+const auth = useAuthStore()
+const ui = useUiStore()
+
+const profileName = ref(auth.user?.name ?? '')
+const profileEmail = ref(auth.user?.email ?? '')
+
+const showUpgrade = ref(false)
+const planName = ref('free')
+const planId = ref('free')
+const usage = ref<Usage>({ employees: 0, shifts: 0, totalShifts: 0, workflows: 0 })
+const limits = ref<PlanLimits>({
+  maxUsers: 3,
+  maxEmployees: 5,
+  maxShiftsPerMonth: 50,
+  maxWorkflows: 2,
+  features: {},
+})
+
+onMounted(async () => {
+  profileName.value = auth.user?.name ?? ''
+  profileEmail.value = auth.user?.email ?? ''
+
+  try {
+    const data = await $fetch<{ limits: PlanLimits; usage: Usage; plan: { planName: string; planId: string } }>('/api/plans/usage')
+    limits.value = data.limits
+    usage.value = data.usage
+    planName.value = data.plan.planName
+    planId.value = data.plan.planId
+  } catch {
+    // fallback to defaults
+  }
+})
+
+async function handlePlanChange(_newPlanId: string) {
+  // modal handles stripe redirect internally
+  // this callback fires for direct plan changes (free plan)
+  ui.addToast({ type: 'success', message: 'plan updated' })
+  showUpgrade.value = false
+
+  try {
+    const data = await $fetch<{ limits: PlanLimits; usage: Usage; plan: { planName: string; planId: string } }>('/api/plans/usage')
+    limits.value = data.limits
+    usage.value = data.usage
+    planName.value = data.plan.planName
+    planId.value = data.plan.planId
+  } catch {
+    // refresh on next page load
+  }
+}
+
+async function handleLogout() {
+  await auth.logout()
+  navigateTo('/login')
+}
 </script>
 
 <template>
@@ -24,6 +78,30 @@ const profileEmail = ref('john@company.com')
         </UiCard>
 
         <UiCard padding="lg">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-sm font-semibold text-white/70">plan & usage</h2>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-medium capitalize" :class="{
+                'bg-white/[0.06] text-white/40': planName === 'free',
+                'bg-sky-pastel/10 text-sky-pastel border border-sky-pastel/20': planName === 'pro',
+                'bg-mint/10 text-mint border border-mint/20': planName === 'enterprise',
+              }">
+                {{ planName }}
+              </span>
+              <UiButton v-if="auth.isAdmin" variant="ghost" size="sm" @click="showUpgrade = true">
+                upgrade
+              </UiButton>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <UiUsageBar label="employees" :current="usage.employees" :max="limits.maxEmployees" />
+            <UiUsageBar label="shifts this month" :current="usage.shifts" :max="limits.maxShiftsPerMonth" />
+            <UiUsageBar label="workflows" :current="usage.workflows" :max="limits.maxWorkflows" />
+          </div>
+        </UiCard>
+
+        <UiCard padding="lg">
           <h2 class="text-sm font-semibold text-white/70 mb-6">appearance</h2>
           <div class="flex items-center justify-between p-3 rounded-xl bg-glass-white/50">
             <div>
@@ -37,23 +115,49 @@ const profileEmail = ref('john@company.com')
         </UiCard>
       </div>
 
-      <UiCard padding="lg">
-        <h2 class="text-sm font-semibold text-white/70 mb-6">account</h2>
-        <div class="space-y-3">
-          <div class="flex items-center gap-3 p-3 rounded-xl bg-glass-white/50 cursor-pointer hover:bg-glass-hover transition-all duration-200">
-            <svg class="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <span class="text-sm text-white/60">change password</span>
+      <div class="space-y-6">
+        <UiCard padding="lg">
+          <h2 class="text-sm font-semibold text-white/70 mb-4">company</h2>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-white/40">name</span>
+              <span class="text-white/60">{{ auth.user?.companyName }}</span>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-white/40">your role</span>
+              <span class="text-white/60 capitalize">{{ auth.user?.role }}</span>
+            </div>
           </div>
-          <div class="flex items-center gap-3 p-3 rounded-xl bg-glass-white/50 cursor-pointer hover:bg-glass-hover transition-all duration-200">
-            <svg class="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            <span class="text-sm text-white/60">notification settings</span>
+        </UiCard>
+
+        <UiCard padding="lg">
+          <h2 class="text-sm font-semibold text-white/70 mb-4">account</h2>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-glass-white/50 cursor-pointer hover:bg-glass-hover transition-all duration-200">
+              <svg class="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span class="text-sm text-white/60">change password</span>
+            </div>
+            <button
+              class="w-full flex items-center gap-3 p-3 rounded-xl bg-glass-white/50 hover:bg-red-400/[0.06] transition-all duration-200"
+              @click="handleLogout"
+            >
+              <svg class="w-4 h-4 text-red-400/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span class="text-sm text-red-400/60">sign out</span>
+            </button>
           </div>
-        </div>
-      </UiCard>
+        </UiCard>
+      </div>
     </div>
+
+    <UiUpgradeModal
+      :open="showUpgrade"
+      :current-plan-id="planId"
+      @close="showUpgrade = false"
+      @select="handlePlanChange"
+    />
   </div>
 </template>

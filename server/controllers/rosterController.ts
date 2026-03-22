@@ -3,6 +3,7 @@ import { rosterService } from '../services/rosterService'
 import { permissionService } from '../services/permissionService'
 import { auditService } from '../services/auditService'
 import { realtimeService } from '../services/realtimeService'
+import { usageService } from '../services/usageService'
 import { AppError } from '../services/authService'
 import { requireAuth, requirePermission } from '../utils/auth'
 import { shiftUpdateSchema, shiftCreateSchema } from '../../shared/utils/validation'
@@ -72,6 +73,8 @@ export const rosterController = {
   async createShift(event: H3Event) {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canCreateShift(user), 'create shift')
+    usageService.checkShiftLimit(user.companyId)
+
     const body = await readBody(event)
     const parsed = shiftCreateSchema.safeParse(body)
 

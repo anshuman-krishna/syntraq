@@ -15,8 +15,21 @@ function id(prefix: string, n: number): string {
 async function seed() {
   // drop and recreate all tables for clean state
   sqlite.exec(`
+    DROP TABLE IF EXISTS onboarding_progress;
+    DROP TABLE IF EXISTS notifications;
+    DROP TABLE IF EXISTS subscriptions;
+    DROP TABLE IF EXISTS plans;
     DROP TABLE IF EXISTS replay_events;
     DROP TABLE IF EXISTS replay_sessions;
+    DROP TABLE IF EXISTS escalations;
+    DROP TABLE IF EXISTS approvals;
+    DROP TABLE IF EXISTS comments;
+    DROP TABLE IF EXISTS messages;
+    DROP TABLE IF EXISTS automations;
+    DROP TABLE IF EXISTS api_usage_logs;
+    DROP TABLE IF EXISTS webhook_logs;
+    DROP TABLE IF EXISTS webhooks;
+    DROP TABLE IF EXISTS api_keys;
     DROP TABLE IF EXISTS audit_logs;
     DROP TABLE IF EXISTS workflows;
     DROP TABLE IF EXISTS behavior_events;
@@ -140,6 +153,101 @@ async function seed() {
       timestamp INTEGER NOT NULL
     );
 
+    CREATE TABLE messages (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      channel_id TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      user_name TEXT NOT NULL,
+      content TEXT NOT NULL,
+      reply_to TEXT,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE comments (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      user_name TEXT NOT NULL,
+      content TEXT NOT NULL,
+      resolved INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE approvals (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      requested_by TEXT NOT NULL REFERENCES users(id),
+      assigned_to TEXT NOT NULL REFERENCES users(id),
+      status TEXT NOT NULL DEFAULT 'pending',
+      note TEXT,
+      created_at INTEGER NOT NULL,
+      resolved_at INTEGER
+    );
+
+    CREATE TABLE escalations (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      created_by TEXT NOT NULL REFERENCES users(id),
+      assigned_to TEXT NOT NULL REFERENCES users(id),
+      priority TEXT NOT NULL DEFAULT 'medium',
+      reason TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      created_at INTEGER NOT NULL,
+      resolved_at INTEGER
+    );
+
+    CREATE TABLE api_keys (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      name TEXT NOT NULL,
+      key_hash TEXT NOT NULL,
+      key_prefix TEXT NOT NULL,
+      permissions TEXT NOT NULL DEFAULT '{}',
+      last_used_at INTEGER,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE webhooks (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      url TEXT NOT NULL,
+      event_types TEXT NOT NULL,
+      secret TEXT NOT NULL,
+      active INTEGER NOT NULL DEFAULT 1,
+      last_triggered_at INTEGER,
+      failure_count INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE webhook_logs (
+      id TEXT PRIMARY KEY,
+      webhook_id TEXT NOT NULL REFERENCES webhooks(id),
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      event_type TEXT NOT NULL,
+      status INTEGER NOT NULL,
+      response_time INTEGER,
+      error TEXT,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE api_usage_logs (
+      id TEXT PRIMARY KEY,
+      api_key_id TEXT NOT NULL REFERENCES api_keys(id),
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      method TEXT NOT NULL,
+      path TEXT NOT NULL,
+      status_code INTEGER NOT NULL,
+      response_time INTEGER,
+      created_at INTEGER NOT NULL
+    );
+
     CREATE TABLE audit_logs (
       id TEXT PRIMARY KEY,
       company_id TEXT NOT NULL REFERENCES companies(id),
@@ -148,6 +256,65 @@ async function seed() {
       entity_type TEXT NOT NULL,
       entity_id TEXT,
       metadata TEXT,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE automations (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      name TEXT NOT NULL,
+      trigger TEXT NOT NULL,
+      conditions TEXT NOT NULL DEFAULT '[]',
+      actions TEXT NOT NULL DEFAULT '[]',
+      active INTEGER NOT NULL DEFAULT 1,
+      last_triggered_at INTEGER,
+      trigger_count INTEGER NOT NULL DEFAULT 0,
+      created_by TEXT NOT NULL REFERENCES users(id),
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE plans (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      stripe_price_id TEXT,
+      max_users INTEGER NOT NULL,
+      max_employees INTEGER NOT NULL,
+      max_shifts_per_month INTEGER NOT NULL,
+      max_workflows INTEGER NOT NULL,
+      features TEXT NOT NULL DEFAULT '{}',
+      price INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE subscriptions (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      plan_id TEXT NOT NULL REFERENCES plans(id),
+      stripe_customer_id TEXT,
+      stripe_subscription_id TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      current_period_end INTEGER,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE notifications (
+      id TEXT PRIMARY KEY,
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      read INTEGER NOT NULL DEFAULT 0,
+      metadata TEXT,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE onboarding_progress (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      company_id TEXT NOT NULL REFERENCES companies(id),
+      completed_steps TEXT NOT NULL DEFAULT '[]',
+      completed INTEGER NOT NULL DEFAULT 0,
+      completed_at INTEGER,
       created_at INTEGER NOT NULL
     );
   `)
@@ -262,7 +429,7 @@ async function seed() {
         id: id('sft', shiftCount),
         companyId,
         employeeId: id('emp', empIdx + 1),
-        date: date.toISOString().split('T')[0],
+        date: date.toISOString().split('T')[0]!,
         startTime: `${String(startHour).padStart(2, '0')}:00`,
         endTime: `${String(Math.min(startHour + duration, 23)).padStart(2, '0')}:00`,
         status,
@@ -291,7 +458,7 @@ async function seed() {
     db.insert(schema.activities).values({
       id: id('act', i + 1),
       companyId,
-      type: activityTypes[i % activityTypes.length],
+      type: activityTypes[i % activityTypes.length]!,
       description: desc,
       employeeId: i < 8 ? id('emp', (i % 10) + 1) : null,
       createdAt: new Date(Date.now() - hoursAgo * 3600000),
@@ -335,8 +502,114 @@ async function seed() {
     db.insert(schema.workflows).values(wf).run()
   })
 
+  // seed plans
+  const planData = [
+    {
+      id: id('pln', 1),
+      name: 'free',
+      maxUsers: 3,
+      maxEmployees: 5,
+      maxShiftsPerMonth: 50,
+      maxWorkflows: 2,
+      features: JSON.stringify({ replay: false, insights: false, audit: false }),
+      price: 0,
+    },
+    {
+      id: id('pln', 2),
+      name: 'pro',
+      maxUsers: 15,
+      maxEmployees: 50,
+      maxShiftsPerMonth: 500,
+      maxWorkflows: 20,
+      features: JSON.stringify({ replay: true, insights: true, audit: true }),
+      price: 49,
+    },
+    {
+      id: id('pln', 3),
+      name: 'enterprise',
+      maxUsers: 999,
+      maxEmployees: 999,
+      maxShiftsPerMonth: 99999,
+      maxWorkflows: 999,
+      features: JSON.stringify({ replay: true, insights: true, audit: true, sso: true, api: true }),
+      price: 199,
+    },
+  ]
+
+  planData.forEach(plan => {
+    db.insert(schema.plans).values(plan).run()
+  })
+
+  // give demo company a pro subscription
+  db.insert(schema.subscriptions).values({
+    id: id('sub', 1),
+    companyId,
+    planId: id('pln', 2),
+    status: 'active',
+  }).run()
+
+  // seed a couple notifications for the admin
+  db.insert(schema.notifications).values({
+    id: id('ntf', 1),
+    companyId,
+    userId: id('usr', 1),
+    type: 'system',
+    title: 'welcome to syntraq',
+    message: 'your account has been set up. explore the dashboard to get started.',
+  }).run()
+
+  db.insert(schema.notifications).values({
+    id: id('ntf', 2),
+    companyId,
+    userId: id('usr', 1),
+    type: 'plan',
+    title: 'pro plan activated',
+    message: 'your team is now on the pro plan with expanded limits.',
+  }).run()
+
+  // seed messages (general channel)
+  const messageData = [
+    { userId: id('usr', 1), userName: 'admin user', content: 'morning team — we have a full roster today. unit 202 is still in maintenance, so plan around that.' },
+    { userId: id('usr', 2), userName: 'demo manager', content: 'noted. i will reassign the hydrovac jobs to unit 201 and 203.' },
+    { userId: id('usr', 3), userName: 'demo operator', content: 'unit 301 is fueled and ready for the service run.' },
+    { userId: id('usr', 1), userName: 'admin user', content: 'great. lets keep comms here if anything comes up on route.' },
+  ]
+
+  messageData.forEach((msg, i) => {
+    db.insert(schema.messages).values({
+      id: id('msg', i + 1),
+      companyId,
+      channelId: 'general',
+      ...msg,
+      createdAt: new Date(Date.now() - (messageData.length - i) * 600000),
+    }).run()
+  })
+
+  // seed a comment on a shift
+  db.insert(schema.comments).values({
+    id: id('cmt', 1),
+    companyId,
+    entityType: 'shift',
+    entityId: id('sft', 1),
+    userId: id('usr', 2),
+    userName: 'demo manager',
+    content: 'please confirm vehicle assignment before dispatch.',
+  }).run()
+
+  // seed an approval
+  db.insert(schema.approvals).values({
+    id: id('apr', 1),
+    companyId,
+    entityType: 'shift',
+    entityId: id('sft', 2),
+    requestedBy: id('usr', 3),
+    assignedTo: id('usr', 2),
+    status: 'pending',
+    note: 'requesting overtime approval for extended shift.',
+  }).run()
+
   // eslint-disable-next-line no-console
-  console.log(`seeded: 1 company, 3 users, ${employeeData.length} employees, ${vehicleData.length} vehicles, ${shiftCount} shifts, ${activityDescriptions.length} activities, ${sampleWorkflows.length} workflows`)
+  console.log(`seeded: 1 company, 3 users, ${employeeData.length} employees, ${vehicleData.length} vehicles, ${shiftCount} shifts, ${activityDescriptions.length} activities, ${sampleWorkflows.length} workflows, ${planData.length} plans, 1 subscription, 2 notifications, ${messageData.length} messages, 1 comment, 1 approval`)
   sqlite.close()
 }
 

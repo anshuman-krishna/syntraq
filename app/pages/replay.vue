@@ -32,6 +32,12 @@ const playing = ref(false)
 let playTimer: ReturnType<typeof setTimeout> | null = null
 const playSpeed = ref(1000)
 
+// phase 13 features
+const trainingMode = ref(false)
+const activeTab = ref<'playback' | 'compare' | 'score'>('playback')
+
+const currentEvent = computed(() => events.value[currentIndex.value] ?? null)
+
 onMounted(async () => {
   if (!auth.hasMinRole('manager')) {
     router.replace('/dashboard')
@@ -52,6 +58,7 @@ async function selectSession(sessionId: string) {
   loadingEvents.value = true
   stopPlayback()
   currentIndex.value = 0
+  activeTab.value = 'playback'
 
   try {
     const data = await $fetch<{ session: ReplaySession; events: ReplayEvent[] }>(`/api/replay/${sessionId}`)
@@ -69,9 +76,11 @@ function goBack() {
   selectedSession.value = null
   events.value = []
   currentIndex.value = 0
+  trainingMode.value = false
 }
 
 function startPlayback() {
+  if (trainingMode.value) return
   if (currentIndex.value >= events.value.length - 1) {
     currentIndex.value = 0
   }
@@ -96,7 +105,6 @@ function stepForward() {
   currentIndex.value++
 
   if (playing.value) {
-    // calculate delay based on actual event timestamps
     const current = new Date(events.value[currentIndex.value]?.timestamp ?? 0).getTime()
     const next = new Date(events.value[currentIndex.value + 1]?.timestamp ?? 0).getTime()
     const gap = Math.min(Math.max(next - current, 100), 3000)
@@ -147,7 +155,20 @@ onBeforeUnmount(() => {
 
       <div class="flex-1" />
 
-      <div v-if="selectedSession && events.length" class="flex items-center gap-2">
+      <!-- mode tabs (when session selected) -->
+      <div v-if="selectedSession" class="flex items-center p-1 rounded-xl bg-glass-white/50 border border-glass-border/50">
+        <button
+          v-for="tab in (['playback', 'compare', 'score'] as const)"
+          :key="tab"
+          class="px-3 py-1.5 rounded-lg text-xs transition-all duration-200"
+          :class="activeTab === tab ? 'bg-sky-pastel/15 text-sky-pastel' : 'text-white/40 hover:text-white/60'"
+          @click="activeTab = tab; if (tab !== 'playback') stopPlayback()"
+        >
+          {{ tab }}
+        </button>
+      </div>
+
+      <div v-if="selectedSession && events.length && activeTab === 'playback'" class="flex items-center gap-2">
         <span class="text-[10px] text-white/25">speed</span>
         <select
           v-model.number="playSpeed"
@@ -162,20 +183,38 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- session list -->
     <template v-if="!selectedSession">
       <ReplaySessionList
         :sessions="sessions"
         :loading="loadingSessions"
         @select="selectSession"
       />
+
+      <!-- comparison mode (from session list) -->
+      <div v-if="sessions.length >= 2" class="mt-6">
+        <UiCard padding="lg">
+          <h2 class="text-sm font-semibold text-white/70 mb-4">compare sessions</h2>
+          <ReplayComparison :sessions="sessions" />
+        </UiCard>
+      </div>
     </template>
 
+    <!-- session detail -->
     <template v-else>
       <div v-if="loadingEvents" class="flex items-center justify-center py-20">
         <div class="w-6 h-6 border-2 border-sky-pastel/30 border-t-sky-pastel rounded-full animate-spin" />
       </div>
 
-      <template v-else-if="events.length">
+      <!-- playback tab -->
+      <template v-else-if="activeTab === 'playback' && events.length">
+        <!-- training mode toggle -->
+        <ReplayTrainingMode
+          :event="currentEvent"
+          :enabled="trainingMode"
+          @update:enabled="(v) => { trainingMode = v; if (v) stopPlayback() }"
+        />
+
         <ReplayTimeline
           :events="events"
           :current-index="currentIndex"
@@ -186,7 +225,7 @@ onBeforeUnmount(() => {
           @seek="handleSeek"
         />
 
-        <!-- event list -->
+        <!-- event list with annotations -->
         <div class="glass-card p-4 max-h-80 overflow-y-auto space-y-1">
           <div
             v-for="(evt, i) in events"
@@ -217,7 +256,20 @@ onBeforeUnmount(() => {
         </div>
       </template>
 
-      <div v-else class="glass-card p-12 text-center">
+      <!-- compare tab -->
+      <template v-else-if="activeTab === 'compare'">
+        <UiCard padding="lg">
+          <h2 class="text-sm font-semibold text-white/70 mb-4">session comparison</h2>
+          <ReplayComparison :sessions="sessions" />
+        </UiCard>
+      </template>
+
+      <!-- score tab -->
+      <template v-else-if="activeTab === 'score'">
+        <ReplayScorePanel :session-id="selectedSession?.id ?? null" />
+      </template>
+
+      <div v-else-if="activeTab === 'playback'" class="glass-card p-12 text-center">
         <p class="text-white/40 text-sm">no events recorded in this session</p>
       </div>
     </template>

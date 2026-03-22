@@ -1,10 +1,24 @@
 import { shiftModel } from '../models/shiftModel'
 import { vehicleModel } from '../models/vehicleModel'
 import { activityModel } from '../models/activityModel'
+import { cacheService } from './cacheService'
+
+const STATS_TTL = 30 * 1000 // 30 seconds
+const ACTIVITY_TTL = 15 * 1000 // 15 seconds
 
 export const dashboardService = {
   getStats(companyId: string) {
-    const today = new Date().toISOString().split('T')[0]
+    const cacheKey = `dashboard:stats:${companyId}`
+    const cached = cacheService.get<ReturnType<typeof this.computeStats>>(cacheKey)
+    if (cached) return cached
+
+    const stats = this.computeStats(companyId)
+    cacheService.set(cacheKey, stats, STATS_TTL)
+    return stats
+  },
+
+  computeStats(companyId: string) {
+    const today = new Date().toISOString().split('T')[0]!
     const todayShifts = shiftModel.findByDate(today, companyId)
     const vehicles = vehicleModel.findAll(companyId)
 
@@ -27,6 +41,12 @@ export const dashboardService = {
   },
 
   getActivityFeed(companyId: string, limit = 10) {
-    return activityModel.findRecent(companyId, limit)
+    const cacheKey = `dashboard:activity:${companyId}:${limit}`
+    const cached = cacheService.get<ReturnType<typeof activityModel.findRecent>>(cacheKey)
+    if (cached) return cached
+
+    const activities = activityModel.findRecent(companyId, limit)
+    cacheService.set(cacheKey, activities, ACTIVITY_TTL)
+    return activities
   },
 }

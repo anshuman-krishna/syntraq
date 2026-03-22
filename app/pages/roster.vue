@@ -60,6 +60,8 @@ onMounted(() => {
       </div>
     </div>
 
+    <IntelligenceSuggestionPanel />
+
     <div data-tutorial="roster-filters">
       <RosterFilters />
     </div>
