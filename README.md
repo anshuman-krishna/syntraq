@@ -1,381 +1,121 @@
 ## syntraq
 
-this is a personal project.
-(nuxt guilde at the last)
+personal project. still evolving.
 
-most operational tools exist to track things,
-very few actually help people understand what they are doing.
+most operational tools are glorified spreadsheets. they store data, they show data, and that's about it. syntraq is an attempt at something different: a platform that actually observes how work happens and helps people get better at it over time.
 
-syntraq is an attempt to bridge that gap,
-it is an operational layer that observes, guides, and improves workflows over time.
+built for teams that operate in the real world. trucking, field services, hydrovac, logistics. the kind of work where a missed shift or a bad schedule costs real money and real time.
 
 ---
 
-## what this actually is
+## what it does
 
-syntraq is a full stack operational intelligence platform
+at its core, syntraq combines scheduling, real-time collaboration, behavioral tracking, and workflow automation into one system. but the point isn't just having all of that in one place.
 
-it combines
-
-* scheduling
-* real-time systems
-* behavioral tracking
-* replay systems
-* ai-assisted workflows
-* collaboration tools
-
-
-it is designed for teams that mostly operate in the real world
-trucking, field services, logistics, and similar environments
+the point is that these things talk to each other. a shift change triggers a notification, updates the timeline, logs the action for replay later, and feeds into analytics. nothing lives in isolation.
 
 ---
 
-## core idea
+## key pieces
 
-instead of building tools that only store data
+**roster and scheduling** - drag and drop shift management, timeline view, real-time sync across users, conflict detection. shifts aren't just placed, they're validated and analyzed.
 
-syntraq focuses on
+**adaptive tutorials** - the interface teaches itself. highlights elements, walks users through flows step by step, picks up where they left off. no onboarding docs, no training videos.
 
-* guiding users while they work
-* learning from behavior
-* improving workflows automatically
+**replay system** - users can replay past sessions and see exactly what happened, what actions were taken, where time was wasted. this feeds into training, scoring, and guided walkthroughs.
 
-the system is meant to feel like it is thinking alongside the user
+**intelligence layer** - predictive scheduling, anomaly detection (overlaps, idle time, overwork), trend insights. surfaces problems before they become visible.
 
----
+**ai assistant** - contextual, built into the system. answers questions, explains behavior, generates workflows, helps during replay.
 
-## core features
+**collaboration** - team chat (global and contextual), inline comments on shifts and workflows, approval flows, escalation. everything ties back to actual operational data.
 
-### roster and scheduling
+**real-time updates** - shift changes propagate instantly, activity feeds update live, presence indicators show who's active. runs on a lightweight sse layer.
 
-a full scheduling system with
+**workflows** - step-based definitions, ai-generated flows, reusable templates. lets teams standardize how they operate without writing code.
 
-* drag and drop shift management
-* timeline view
-* real-time updates across users
-* validation and conflict prevention
+**analytics** - utilization tracking, inefficiency detection, predictive warnings. designed to answer "what should we do next" instead of just "what happened."
 
-shifts are actively analyzed and improved
+**api and automation** - api key system, webhook triggers, event-driven automation. early stage, but the goal is for syntraq to work as infrastructure other tools can plug into.
 
 ---
 
-### adaptive tutorial system
+## tech
 
-the interface teaches itself
+frontend: nuxt 3 (typescript), tailwindcss, three.js, pinia
 
-* highlights ui elements
-* step-by-step guidance
-* triggered automatically based on behavior
-* resumable and context-aware
+backend: nitro server, drizzle orm, sqlite (turso-ready)
 
-this removes the need for traditional onboarding
+auth: lucia auth (email/password, google sso, microsoft sso)
 
----
+other: stripe billing, resend email, sse for realtime
 
-### replay system
-
-one of the core differentiators
-
-users can replay sessions and see
-
-* what actions were taken
-* how workflows were executed
-* where inefficiencies occurred
-
-this evolves into
-
-* training mode
-* performance scoring
-* guided explanations
+architecture is strict mvc. controllers handle requests, services handle logic, models handle data. frontend is split into components, modules, composables, and stores. multi-tenant from the ground up.
 
 ---
 
-### intelligence layer
+## three.js usage
 
-includes
-
-* predictive scheduling suggestions
-* anomaly detection (overlaps, idle time, overwork)
-* trend insights
-* workflow recommendations
-
-the system surfaces problems before users notice them (generally)
-
----
-
-### ai assistant
-
-a contextual assistant built into the system
-
-can
-
-* answer questions
-* explain system behavior
-* generate workflows
-* assist during replay and training
-
-
----
-
-### collaboration layer
-
-teams can operate inside the system
-
-includes
-
-* team chat (global and contextual)
-* inline comments on shifts and workflows
-* approval flows
-* escalation system
-
-everything is tied to actual operational entities
-
----
-
-### real-time system
-
-the platform updates live
-
-* shift updates propagate instantly
-* activity feed updates in real time
-* presence indicators show active users
-
-built on a lightweight sse system
-
----
-
-### workflow system
-
-custom workflows can be created and managed
-
-* step-based definitions
-* ai-generated workflows
-* reusable templates
-
-this allows teams to standardize operations
-
----
-
-### analytics and insights
-
-* utilization tracking
-* inefficiency detection
-* anomaly surfacing
-* predictive warnings
-
-designed to answer “what should we do next” (one of the biggest issues out there)
-
----
-
-### api and automation (expanding)
-
-the system is designed to extend outward
-
-* api key system
-* webhook triggers
-* event-driven automation (early stage)
-
-this allows syntraq to act as infrastructure
-
----
-
-## technical overview
-
-this is a modern full stack system
-
-frontend
-
-* nuxt 3 (typescript)
-* tailwindcss (glass morphism design system)
-* three.js (interactive 3d systems)
-* pinia (state management)
-
-backend
-
-* nitro server
-* drizzle orm
-* sqlite (turso-ready)
-
-additional systems
-
-* lucia auth
-* stripe billing
-* resend email
-* sse realtime layer
-
-architecture follows strict mvc separation
-
----
-
-## architecture notes
-
-the system is structured around
-
-* controllers (request handling)
-* services (business logic)
-* models (database access)
-
-frontend is modular
-
-* components
-* modules
-* composables
-* stores
-
-multi-tenant architecture is enforced at all levels
+three.js isn't decoration here. it's used for fleet visualization, interactive scheduling timelines, avatar customization, spatial dashboards. all scenes are lazy loaded and kept low-poly to stay out of the main thread's way.
 
 ---
 
 ## security
 
-security is treated as a first-class concern
-
-* input validation on all endpoints
-* no raw sql queries
-* xss protection
-* csrf protection
-* rate limiting on sensitive routes
-* api key hashing
-
-no client input is trusted
+- input validation on every endpoint
+- no raw sql (drizzle handles it)
+- xss and csrf protection
+- rate limiting on sensitive routes
+- api keys are hashed
+- client input is never trusted
 
 ---
 
 ## performance
 
-the system is optimized for real-world usage
-
-* lazy loading of heavy components
-* optimized three.js scenes
-* query optimization
-* caching (where applicable)
-* minimal re-renders
-
-realtime updates are throttled and controlled
-
----
-
-## developer experience
-
-the project is structured for clarity
-
-* consistent naming
-* strict typing
-* minimal but meaningful comments
-* clean separation of concerns
-
-scripts exist for
-
-* seeding data
-* development setup
-* build validation
+- heavy components are lazy loaded
+- three.js scenes are optimized and throttled
+- queries are tuned, caching is used where it makes sense
+- realtime updates are controlled, not firehosed
 
 ---
 
 ## current state
 
-it includes
-
-* full frontend and backend
-* real-time systems
-* intelligence layer
-* collaboration features
-* billing and onboarding
-* marketing site
-
-it is deployable and usable
+the system has a working frontend and backend, real-time layer, intelligence features, collaboration tools, billing, onboarding, and a marketing site. it's deployable and usable, but still being built out.
 
 ---
 
-## why this exists
+## why
 
-most tools help you do work,
-very few help you understand and improve it,
-syntraq is built around that idea.
+most tools help you do work. very few help you understand it or improve it. syntraq is built around that gap.
 
 ---
 
-## final note
+## setup
 
-this is still evolving
-but the goal is clear:
-
-build a system that does not just support operations but actively makes them better.
-
----
-
-## Nuxt Minimal Starter
-
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
-
-## Setup
-
-Make sure to install dependencies:
+install dependencies:
 
 ```bash
-# npm
-npm install
-
-# pnpm
 pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+run the dev server:
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
 pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
-
-Build the application for production:
+build for production:
 
 ```bash
-# npm
-npm run build
-
-# pnpm
 pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
-Locally preview production build:
+preview the production build:
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
 pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+more info in the [nuxt deployment docs](https://nuxt.com/docs/getting-started/deployment).
