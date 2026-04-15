@@ -33,6 +33,13 @@ export const apiKeyModel = {
       .run()
   },
 
+  rotate(id: string, companyId: string, keyHash: string, keyPrefix: string) {
+    return db.update(apiKeys)
+      .set({ keyHash, keyPrefix, lastUsedAt: null })
+      .where(and(eq(apiKeys.id, id), eq(apiKeys.companyId, companyId)))
+      .run()
+  },
+
   remove(id: string, companyId: string) {
     return db.delete(apiKeys)
       .where(and(eq(apiKeys.id, id), eq(apiKeys.companyId, companyId)))

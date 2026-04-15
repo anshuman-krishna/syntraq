@@ -1,32 +1,45 @@
-import { rateLimitService } from '../services/rateLimitService'
+import { rateLimitService, type RateLimitCategory } from '../services/rateLimitService'
+import { apiError } from '../utils/errors'
+
+interface Tier {
+  key: string
+  category: RateLimitCategory
+}
 
 export default defineEventHandler((event) => {
   const path = getRequestURL(event).pathname
-
-  // skip non-api routes
   if (!path.startsWith('/api/')) return
-
-  // skip public endpoints and webhooks
-  if (path.startsWith('/api/public/')) return
   if (path === '/api/billing/webhook') return
 
   const ip = getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'
+  const tiers: Tier[] = []
 
-  // auth routes get stricter limits, public api gets its own category
-  const category = path.startsWith('/api/auth/') ? 'auth'
-    : path.startsWith('/api/public/') ? 'api'
-    : 'api'
-  const key = `${category}:${ip}`
+  if (path.startsWith('/api/auth/')) {
+    tiers.push({ key: `auth:ip:${ip}`, category: 'auth' })
+  } else if (path.startsWith('/api/public/')) {
+    // public api — prefer per-key limit, fall back to ip
+    const keyId = event.context.apiKey?.keyId
+    tiers.push({ key: keyId ? `public:key:${keyId}` : `public:ip:${ip}`, category: 'publicKey' })
+  } else {
+    // internal api — always apply an ip tier, and add a session tier when logged in
+    tiers.push({ key: `api:ip:${ip}`, category: 'api' })
+    const userId = event.context.user?.id
+    if (userId) tiers.push({ key: `api:session:${userId}`, category: 'session' })
+  }
 
-  const result = rateLimitService.check(key, category)
+  let strictest: ReturnType<typeof rateLimitService.check> | null = null
+  for (const tier of tiers) {
+    const result = rateLimitService.check(tier.key, tier.category)
+    if (!strictest || result.remaining < strictest.remaining) strictest = result
+    if (!result.allowed) {
+      setResponseHeader(event, 'X-RateLimit-Remaining', '0')
+      setResponseHeader(event, 'X-RateLimit-Reset', String(Math.ceil(result.resetAt / 1000)))
+      throw apiError('rate_limited', 'too many requests. please try again later.', undefined, event)
+    }
+  }
 
-  setResponseHeader(event, 'X-RateLimit-Remaining', String(result.remaining))
-  setResponseHeader(event, 'X-RateLimit-Reset', String(Math.ceil(result.resetAt / 1000)))
-
-  if (!result.allowed) {
-    throw createError({
-      statusCode: 429,
-      message: 'too many requests. please try again later.',
-    })
+  if (strictest) {
+    setResponseHeader(event, 'X-RateLimit-Remaining', String(strictest.remaining))
+    setResponseHeader(event, 'X-RateLimit-Reset', String(Math.ceil(strictest.resetAt / 1000)))
   }
 })

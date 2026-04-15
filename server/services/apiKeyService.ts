@@ -4,6 +4,8 @@ import { generateId } from '../../shared/utils/id'
 import { apiKeyModel } from '../models/apiKeyModel'
 import { AppError } from './authService'
 
+// owasp-recommended argon2id parameters (memory-limited server).
+// revisit yearly against https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 const ARGON2_OPTIONS = {
   memoryCost: 19456,
   timeCost: 2,
@@ -48,7 +50,6 @@ export const apiKeyService = {
       permissions: JSON.stringify(permissions),
     })
 
-    // return the raw key only on creation — it cannot be retrieved later
     return {
       id: record.id,
       name: record.name,
@@ -75,6 +76,7 @@ export const apiKeyService = {
     const candidates = apiKeyModel.findByPrefix(prefix)
 
     for (const candidate of candidates) {
+      // argon2.verify is constant-time against the hash
       const valid = await verify(candidate.keyHash, rawKey, ARGON2_OPTIONS)
       if (valid) {
         apiKeyModel.updateLastUsed(candidate.id)
@@ -89,12 +91,32 @@ export const apiKeyService = {
     return null
   },
 
+  // strict default-deny: an empty permission set grants nothing.
+  // callers that need a legacy admin key must set every resource explicitly.
   hasPermission(permissions: ApiKeyPermissions, resource: string): boolean {
     const key = resource as keyof ApiKeyPermissions
-    // if no permissions are set, allow all (backward compat)
-    const values = Object.values(permissions)
-    if (values.length === 0 || values.every(v => v === undefined)) return true
     return permissions[key] === true
+  },
+
+  async rotate(id: string, companyId: string) {
+    const existing = apiKeyModel.findById(id, companyId)
+    if (!existing) {
+      throw new AppError('api key not found', 404)
+    }
+
+    const rawKey = generateRawKey()
+    const prefix = extractPrefix(rawKey)
+    const keyHash = await hash(rawKey, ARGON2_OPTIONS)
+
+    apiKeyModel.rotate(id, companyId, keyHash, prefix)
+
+    return {
+      id,
+      name: existing.name,
+      key: rawKey,
+      prefix,
+      permissions: JSON.parse(existing.permissions) as ApiKeyPermissions,
+    }
   },
 
   revoke(id: string, companyId: string) {

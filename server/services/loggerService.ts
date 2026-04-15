@@ -1,3 +1,5 @@
+import type { H3Event } from 'h3'
+
 type LogLevel = 'info' | 'warn' | 'error' | 'debug'
 
 interface LogEntry {
@@ -5,6 +7,15 @@ interface LogEntry {
   message: string
   context?: Record<string, unknown>
   timestamp: string
+}
+
+function consoleFor(level: LogLevel): (msg: string) => void {
+  // eslint-disable-next-line no-console
+  if (level === 'error') return console.error
+  // eslint-disable-next-line no-console
+  if (level === 'warn') return console.warn
+  // eslint-disable-next-line no-console
+  return console.log
 }
 
 function formatEntry(entry: LogEntry): string {
@@ -20,14 +31,18 @@ function log(level: LogLevel, message: string, context?: Record<string, unknown>
     timestamp: new Date().toISOString(),
   }
 
-  // structured output — production log collectors parse json
+  const write = consoleFor(level)
   if (process.env.NODE_ENV === 'production') {
-    // eslint-disable-next-line no-console
-    console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'](JSON.stringify(entry))
+    write(JSON.stringify(entry))
   } else {
-    // eslint-disable-next-line no-console
-    console[level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'](formatEntry(entry))
+    write(formatEntry(entry))
   }
+}
+
+function withEvent(event: H3Event | undefined, context?: Record<string, unknown>): Record<string, unknown> | undefined {
+  const requestId = event?.context?.requestId
+  if (!requestId && !context) return undefined
+  return { ...(requestId ? { requestId } : {}), ...context }
 }
 
 export const loggerService = {
@@ -46,6 +61,18 @@ export const loggerService = {
   debug(message: string, context?: Record<string, unknown>) {
     if (process.env.NODE_ENV !== 'production') {
       log('debug', message, context)
+    }
+  },
+
+  // scoped logger that auto-attaches request id
+  forEvent(event: H3Event | undefined) {
+    return {
+      info: (m: string, c?: Record<string, unknown>) => log('info', m, withEvent(event, c)),
+      warn: (m: string, c?: Record<string, unknown>) => log('warn', m, withEvent(event, c)),
+      error: (m: string, c?: Record<string, unknown>) => log('error', m, withEvent(event, c)),
+      debug: (m: string, c?: Record<string, unknown>) => {
+        if (process.env.NODE_ENV !== 'production') log('debug', m, withEvent(event, c))
+      },
     }
   },
 }

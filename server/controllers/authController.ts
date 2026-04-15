@@ -5,6 +5,16 @@ import { auditService } from '../services/auditService'
 import { emailService } from '../services/emailService'
 import { companyModel } from '../models/companyModel'
 import { loginSchema, registerSchema } from '../../shared/utils/validation'
+import { apiError } from '../utils/errors'
+
+function fromAppError(e: AppError, event: H3Event) {
+  const code = e.statusCode === 401 ? 'unauthenticated'
+    : e.statusCode === 403 ? 'forbidden'
+    : e.statusCode === 404 ? 'not_found'
+    : e.statusCode === 409 ? 'conflict'
+    : 'validation_error'
+  return apiError(code, e.message, undefined, event)
+}
 
 export const authController = {
   async register(event: H3Event) {
@@ -12,7 +22,7 @@ export const authController = {
     const parsed = registerSchema.safeParse(body)
 
     if (!parsed.success) {
-      throw createError({ statusCode: 400, message: parsed.error.issues[0].message })
+      throw apiError('validation_error', parsed.error.issues[0]?.message ?? 'invalid input', { issues: parsed.error.issues }, event)
     }
 
     try {
@@ -28,14 +38,11 @@ export const authController = {
         entityId: user.id,
       })
 
-      // send welcome email (non-blocking)
       emailService.sendWelcome(user.email, user.name, user.companyName).catch(() => {})
 
       return { user }
     } catch (e) {
-      if (e instanceof AppError) {
-        throw createError({ statusCode: e.statusCode, message: e.message })
-      }
+      if (e instanceof AppError) throw fromAppError(e, event)
       throw e
     }
   },
@@ -45,7 +52,7 @@ export const authController = {
     const parsed = loginSchema.safeParse(body)
 
     if (!parsed.success) {
-      throw createError({ statusCode: 400, message: parsed.error.issues[0].message })
+      throw apiError('validation_error', parsed.error.issues[0]?.message ?? 'invalid input', { issues: parsed.error.issues }, event)
     }
 
     try {
@@ -62,9 +69,7 @@ export const authController = {
 
       return { user }
     } catch (e) {
-      if (e instanceof AppError) {
-        throw createError({ statusCode: e.statusCode, message: e.message })
-      }
+      if (e instanceof AppError) throw fromAppError(e, event)
       throw e
     }
   },
@@ -81,7 +86,7 @@ export const authController = {
   async me(event: H3Event) {
     const user = event.context.user
     if (!user) {
-      throw createError({ statusCode: 401, message: 'not authenticated' })
+      throw apiError('unauthenticated', 'not authenticated', undefined, event)
     }
 
     const company = companyModel.findById(user.companyId)

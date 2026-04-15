@@ -29,7 +29,5 @@ db.sqlite
 db.sqlite-wal
 db.sqlite-shm
 
-# internal context
-CLAUDE.md
-*.plan.md
-.claude/
+# testing and validation
+/testing/

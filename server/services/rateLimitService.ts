@@ -5,7 +5,6 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>()
 
-// clean expired entries periodically
 setInterval(() => {
   const now = Date.now()
   for (const [key, entry] of store) {
@@ -18,15 +17,19 @@ interface RateLimitConfig {
   maxRequests: number
 }
 
-const CONFIGS: Record<string, RateLimitConfig> = {
+export type RateLimitCategory = 'auth' | 'api' | 'publicKey' | 'session' | 'webhook'
+
+const CONFIGS: Record<RateLimitCategory, RateLimitConfig> = {
   auth: { windowMs: 15 * 60_000, maxRequests: 20 },
   api: { windowMs: 60_000, maxRequests: 100 },
+  publicKey: { windowMs: 60_000, maxRequests: 300 },
+  session: { windowMs: 60_000, maxRequests: 300 },
   webhook: { windowMs: 60_000, maxRequests: 200 },
 }
 
 export const rateLimitService = {
-  check(key: string, category: string = 'api'): { allowed: boolean; remaining: number; resetAt: number } {
-    const config = (CONFIGS[category] ?? CONFIGS['api'])!
+  check(key: string, category: RateLimitCategory = 'api'): { allowed: boolean; remaining: number; resetAt: number } {
+    const config = CONFIGS[category]
     const now = Date.now()
     const entry = store.get(key)
 

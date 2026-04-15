@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { apiError } from './errors'
 
 export interface AuthContext {
   id: string
@@ -11,7 +12,7 @@ export interface AuthContext {
 export function requireAuth(event: H3Event): AuthContext {
   const user = event.context.user
   if (!user) {
-    throw createError({ statusCode: 401, message: 'not authenticated' })
+    throw apiError('unauthenticated', 'not authenticated', undefined, event)
   }
   return {
     id: user.id,
@@ -22,8 +23,8 @@ export function requireAuth(event: H3Event): AuthContext {
   }
 }
 
-export function requirePermission(user: AuthContext, allowed: boolean, action: string) {
+export function requirePermission(user: AuthContext, allowed: boolean, action: string, event?: H3Event) {
   if (!allowed) {
-    throw createError({ statusCode: 403, message: `insufficient permissions: ${action}` })
+    throw apiError('forbidden', `insufficient permissions: ${action}`, { action }, event)
   }
 }

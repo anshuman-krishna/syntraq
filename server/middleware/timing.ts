@@ -1,3 +1,5 @@
+import { loggerService as logger } from '../services/loggerService'
+
 export default defineEventHandler((event) => {
   const path = getRequestURL(event).pathname
   if (!path.startsWith('/api/')) return
@@ -6,12 +8,15 @@ export default defineEventHandler((event) => {
 
   event.node.res.on('finish', () => {
     const duration = Date.now() - start
-    // add server timing header for observability
     setResponseHeader(event, 'Server-Timing', `total;dur=${duration}`)
 
-    // log slow requests in production
     if (duration > 1000) {
-      console.warn(`[slow-request] ${getMethod(event)} ${path} took ${duration}ms`)
+      logger.warn('slow request', {
+        requestId: event.context.requestId,
+        method: getMethod(event),
+        path,
+        durationMs: duration,
+      })
     }
   })
 })

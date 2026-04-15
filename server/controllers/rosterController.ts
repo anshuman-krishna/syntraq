@@ -38,7 +38,7 @@ export const rosterController = {
     const parsed = shiftUpdateSchema.safeParse(body)
 
     if (!parsed.success) {
-      throw createError({ statusCode: 400, message: parsed.error.issues[0].message })
+      throw createError({ statusCode: 400, message: parsed.error.issues[0]?.message ?? 'invalid input' })
     }
 
     try {
@@ -79,7 +79,7 @@ export const rosterController = {
     const parsed = shiftCreateSchema.safeParse(body)
 
     if (!parsed.success) {
-      throw createError({ statusCode: 400, message: parsed.error.issues[0].message })
+      throw createError({ statusCode: 400, message: parsed.error.issues[0]?.message ?? 'invalid input' })
     }
 
     try {
