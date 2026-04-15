@@ -9,10 +9,37 @@ export const companies = sqliteTable('companies', {
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  // nullable so oauth-only users can exist without a local password
+  passwordHash: text('password_hash'),
   name: text('name').notNull(),
   role: text('role', { enum: ['admin', 'manager', 'operator'] }).notNull().default('operator'),
   companyId: text('company_id').notNull().references(() => companies.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
+export const oauthAccounts = sqliteTable('oauth_accounts', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  provider: text('provider', { enum: ['google', 'microsoft'] }).notNull(),
+  providerAccountId: text('provider_account_id').notNull(),
+  email: text('email'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
+export const passwordResetTokens = sqliteTable('password_reset_tokens', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  tokenHash: text('token_hash').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  usedAt: integer('used_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
+export const userTotp = sqliteTable('user_totp', {
+  userId: text('user_id').primaryKey().references(() => users.id),
+  secret: text('secret').notNull(),
+  verifiedAt: integer('verified_at', { mode: 'timestamp' }),
+  recoveryCodesHash: text('recovery_codes_hash'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 })
 

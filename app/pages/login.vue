@@ -66,6 +66,33 @@ async function handleLogin() {
         </UiButton>
       </form>
 
+      <div class="flex items-center gap-3">
+        <div class="flex-1 h-px bg-white/[0.08]" />
+        <span class="text-[10px] uppercase tracking-widest text-white/30">or</span>
+        <div class="flex-1 h-px bg-white/[0.08]" />
+      </div>
+
+      <div class="space-y-2">
+        <a
+          href="/api/auth/oauth/google"
+          class="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200"
+        >
+          continue with google
+        </a>
+        <a
+          href="/api/auth/oauth/microsoft"
+          class="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-200"
+        >
+          continue with microsoft
+        </a>
+      </div>
+
+      <p class="text-center text-xs text-white/25">
+        <NuxtLink to="/forgot-password" class="text-white/40 hover:text-white/70 transition-colors duration-200">
+          forgot password?
+        </NuxtLink>
+      </p>
+
       <div class="space-y-2">
         <p class="text-center text-xs text-white/30">demo accounts</p>
         <div class="flex gap-2">

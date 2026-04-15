@@ -78,6 +78,12 @@ export default defineNuxtConfig({
     emailProvider: process.env.EMAIL_PROVIDER || '',
     emailApiKey: process.env.EMAIL_API_KEY || '',
     emailFrom: process.env.EMAIL_FROM || 'noreply@syntraq.io',
+    oauthGoogleClientId: process.env.OAUTH_GOOGLE_CLIENT_ID || '',
+    oauthGoogleClientSecret: process.env.OAUTH_GOOGLE_CLIENT_SECRET || '',
+    oauthMicrosoftClientId: process.env.OAUTH_MICROSOFT_CLIENT_ID || '',
+    oauthMicrosoftClientSecret: process.env.OAUTH_MICROSOFT_CLIENT_SECRET || '',
+    oauthMicrosoftTenant: process.env.OAUTH_MICROSOFT_TENANT || 'common',
+    publicApiCorsOrigins: process.env.PUBLIC_API_CORS_ORIGINS || '',
     public: {
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
       stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',

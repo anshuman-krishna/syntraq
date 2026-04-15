@@ -14,11 +14,18 @@ export const userModel = {
   create(data: {
     id: string
     email: string
-    passwordHash: string
+    passwordHash: string | null
     name: string
     role: 'admin' | 'manager' | 'operator'
     companyId: string
   }) {
     return db.insert(users).values(data).returning().get()
+  },
+
+  updatePasswordHash(id: string, passwordHash: string) {
+    return db.update(users)
+      .set({ passwordHash })
+      .where(eq(users.id, id))
+      .run()
   },
 }

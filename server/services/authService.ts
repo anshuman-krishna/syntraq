@@ -57,7 +57,7 @@ export const authService = {
 
   async login(input: LoginInput) {
     const user = userModel.findByEmail(input.email)
-    if (!user) {
+    if (!user || !user.passwordHash) {
       throw new AppError('invalid email or password', 401)
     }
 

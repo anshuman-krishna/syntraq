@@ -33,9 +33,9 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 export default defineEventHandler((event) => {
   const path = getRequestURL(event).pathname
-  if (!path.startsWith('/api/')) return
 
-  // always ensure the client has a csrf cookie it can echo back
+  // always ensure the client has a csrf cookie it can echo back. we set it
+  // on every request (api or page) so first-visit POSTs to /api/ have a token.
   let token = getCookie(event, COOKIE_NAME)
   if (!token) {
     token = issueToken()
@@ -46,6 +46,9 @@ export default defineEventHandler((event) => {
       maxAge: 60 * 60 * 24 * 7,
     })
   }
+
+  // validation only gates /api/ unsafe methods
+  if (!path.startsWith('/api/')) return
 
   const method = getMethod(event)
   if (SAFE_METHODS.has(method)) return

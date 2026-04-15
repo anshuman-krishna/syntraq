@@ -101,6 +101,8 @@ async function handleLogout() {
           </div>
         </UiCard>
 
+        <UiSecurityPanel />
+
         <UiCard padding="lg">
           <h2 class="text-sm font-semibold text-white/70 mb-6">appearance</h2>
           <div class="flex items-center justify-between p-3 rounded-xl bg-glass-white/50">
