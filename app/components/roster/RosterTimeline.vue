@@ -50,7 +50,7 @@ function handleDragEnd() {
   dragging.value = null
 }
 
-function handleDrop(e: DragEvent, employeeId: string) {
+function handleDrop(e: DragEvent) {
   e.preventDefault()
   const shiftId = e.dataTransfer?.getData('text/plain')
   if (!shiftId || !timelineRef.value) return
@@ -65,7 +65,7 @@ function handleDrop(e: DragEvent, employeeId: string) {
   const clampedHour = Math.max(6, Math.min(newHour, 22))
 
   roster.moveShift(shiftId, clampedHour)
-  ui.addToast('info', 'shift rescheduled')
+  ui.addToast({ type: 'info', message: 'shift rescheduled' })
   dragging.value = null
 }
 
@@ -123,7 +123,7 @@ function handleDragOver(e: DragEvent) {
             <div
               class="timeline-track flex-1 relative h-10 bg-glass-white/30 rounded-lg"
               @dragover="handleDragOver"
-              @drop="handleDrop($event, employee.id)"
+              @drop="handleDrop($event)"
             >
               <div
                 v-for="shift in roster.getEmployeeShifts(employee.id).filter(s => s.date === selectedDay)"

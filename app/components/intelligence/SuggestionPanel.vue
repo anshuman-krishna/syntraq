@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { reportClientError } from '~/utils/reportClientError'
+
 interface Prediction {
   type: 'optimal_assignment' | 'understaffed' | 'overstaffed' | 'pattern_match'
   confidence: number
@@ -12,13 +14,15 @@ interface Prediction {
 const predictions = ref<Prediction[]>([])
 const loading = ref(true)
 const expanded = ref(true)
+const ui = useUiStore()
 
 onMounted(async () => {
   try {
     const data = await $fetch<{ predictions: Prediction[] }>('/api/intelligence/predictions')
     predictions.value = data.predictions
-  } catch {
-    // silent fail
+  } catch (error) {
+    reportClientError('intelligence.loadPredictions', error)
+    ui.addToast({ type: 'error', message: 'failed to load ai suggestions' })
   } finally {
     loading.value = false
   }

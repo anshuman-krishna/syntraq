@@ -18,7 +18,7 @@ const statuses: Array<ShiftStatus | 'all'> = ['all', 'scheduled', 'active', 'com
         type="text"
         placeholder="search employees..."
         class="w-full pl-9 pr-4 py-2 text-sm text-white/80 placeholder:text-white/25 bg-glass-white border border-glass-border rounded-xl outline-none focus:border-sky-pastel/30 focus:shadow-[0_0_0_3px_rgba(167,216,255,0.08)] transition-all duration-200"
-      />
+      >
     </div>
 
     <div class="flex items-center gap-2 flex-wrap">

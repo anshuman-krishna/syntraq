@@ -1,44 +1,44 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { commentService } from '../services/commentService'
 import { realtimeService } from '../services/realtimeService'
 import { requireAuth } from '../utils/auth'
+import { getQueryWithSchema, readBodyWithSchema } from '../utils/validation'
+
+const commentsQuerySchema = z.object({
+  entityType: z.string().trim().min(1),
+  entityId: z.string().trim().min(1),
+})
+
+const addCommentSchema = z.object({
+  entityType: z.string().trim().min(1),
+  entityId: z.string().trim().min(1),
+  content: z.string().trim().min(1).max(1000),
+})
+
+const resolveCommentSchema = z.object({
+  id: z.string().trim().min(1),
+})
 
 export const commentController = {
   getComments(event: H3Event) {
     const user = requireAuth(event)
-    const query = getQuery(event)
-    const entityType = typeof query.entityType === 'string' ? query.entityType : ''
-    const entityId = typeof query.entityId === 'string' ? query.entityId : ''
+    const query = getQueryWithSchema(event, commentsQuerySchema)
 
-    if (!entityType || !entityId) {
-      throw createError({ statusCode: 400, message: 'entityType and entityId required' })
-    }
-
-    const comments = commentService.getComments(entityType, entityId, user.companyId)
+    const comments = commentService.getComments(query.entityType, query.entityId, user.companyId)
     return { comments }
   },
 
   async addComment(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-
-    const content = typeof body?.content === 'string' ? body.content.trim() : ''
-    if (!content || content.length > 1000) {
-      throw createError({ statusCode: 400, message: 'comment must be 1-1000 characters' })
-    }
-
-    const entityType = typeof body?.entityType === 'string' ? body.entityType : ''
-    const entityId = typeof body?.entityId === 'string' ? body.entityId : ''
-    if (!entityType || !entityId) {
-      throw createError({ statusCode: 400, message: 'entityType and entityId required' })
-    }
+    const body = await readBodyWithSchema(event, addCommentSchema)
 
     const comment = commentService.addComment({
-      entityType,
-      entityId,
+      entityType: body.entityType,
+      entityId: body.entityId,
       userId: user.id,
       userName: user.name,
-      content,
+      content: body.content,
       companyId: user.companyId,
     })
 
@@ -56,11 +56,9 @@ export const commentController = {
 
   async resolveComment(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-    const id = typeof body?.id === 'string' ? body.id : ''
-    if (!id) throw createError({ statusCode: 400, message: 'comment id required' })
+    const body = await readBodyWithSchema(event, resolveCommentSchema)
 
-    const comment = commentService.resolveComment(id, user.companyId)
+    const comment = commentService.resolveComment(body.id, user.companyId)
     return { comment }
   },
 }

@@ -15,9 +15,9 @@ async function saveShift() {
   if (!roster.editingShift) return
   const success = await roster.updateShift(roster.editingShift)
   if (success) {
-    ui.addToast('success', 'shift updated successfully')
+    ui.addToast({ type: 'success', message: 'shift updated successfully' })
   } else {
-    ui.addToast('error', 'failed to update shift')
+    ui.addToast({ type: 'error', message: 'failed to update shift' })
   }
 }
 </script>

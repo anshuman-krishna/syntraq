@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Plan, Usage, PlanLimits } from '@shared/types/plan'
+import type { Usage, PlanLimits } from '@shared/types/plan'
 
 const auth = useAuthStore()
 const ui = useUiStore()
@@ -81,11 +81,14 @@ async function handleLogout() {
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-sm font-semibold text-white/70">plan & usage</h2>
             <div class="flex items-center gap-2">
-              <span class="px-2.5 py-1 rounded-lg text-[11px] font-medium capitalize" :class="{
-                'bg-white/[0.06] text-white/40': planName === 'free',
-                'bg-sky-pastel/10 text-sky-pastel border border-sky-pastel/20': planName === 'pro',
-                'bg-mint/10 text-mint border border-mint/20': planName === 'enterprise',
-              }">
+              <span
+                class="px-2.5 py-1 rounded-lg text-[11px] font-medium capitalize"
+                :class="{
+                  'bg-white/[0.06] text-white/40': planName === 'free',
+                  'bg-sky-pastel/10 text-sky-pastel border border-sky-pastel/20': planName === 'pro',
+                  'bg-mint/10 text-mint border border-mint/20': planName === 'enterprise',
+                }"
+              >
                 {{ planName }}
               </span>
               <UiButton v-if="auth.isAdmin" variant="ghost" size="sm" @click="showUpgrade = true">

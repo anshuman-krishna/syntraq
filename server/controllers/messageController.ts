@@ -1,36 +1,40 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { messageService } from '../services/messageService'
 import { realtimeService } from '../services/realtimeService'
 import { requireAuth } from '../utils/auth'
+import { getQueryWithSchema, readBodyWithSchema } from '../utils/validation'
+
+const messagesQuerySchema = z.object({
+  channel: z.string().trim().min(1).optional(),
+})
+
+const sendMessageSchema = z.object({
+  content: z.string().trim().min(1).max(2000),
+  channelId: z.string().trim().min(1).optional(),
+  replyTo: z.string().trim().min(1).optional(),
+})
 
 export const messageController = {
   getMessages(event: H3Event) {
     const user = requireAuth(event)
-    const query = getQuery(event)
-    const channelId = typeof query.channel === 'string' ? query.channel : 'general'
+    const query = getQueryWithSchema(event, messagesQuerySchema)
+    const channelId = query.channel ?? 'general'
     const messages = messageService.getMessages(channelId, user.companyId)
     return { messages }
   },
 
   async sendMessage(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-
-    const content = typeof body?.content === 'string' ? body.content.trim() : ''
-    if (!content || content.length > 2000) {
-      throw createError({ statusCode: 400, message: 'message must be 1-2000 characters' })
-    }
-
-    const channelId = typeof body?.channelId === 'string' ? body.channelId : 'general'
-    const replyTo = typeof body?.replyTo === 'string' ? body.replyTo : undefined
+    const body = await readBodyWithSchema(event, sendMessageSchema)
 
     const message = messageService.sendMessage({
-      channelId,
+      channelId: body.channelId ?? 'general',
       userId: user.id,
       userName: user.name,
-      content,
+      content: body.content,
       companyId: user.companyId,
-      replyTo,
+      replyTo: body.replyTo,
     })
 
     realtimeService.broadcast({

@@ -1,19 +1,23 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { billingService } from '../services/billingService'
 import { requireAuth, requirePermission } from '../utils/auth'
 import { permissionService } from '../services/permissionService'
 import { auditService } from '../services/auditService'
 import { loggerService as logger } from '../services/loggerService'
+import { apiError } from '../utils/errors'
+import { readBodyWithSchema } from '../utils/validation'
+
+const createCheckoutSchema = z.object({
+  planId: z.string().trim().min(1),
+})
 
 export const billingController = {
   async createCheckout(event: H3Event) {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageCompany(user), 'manage billing')
 
-    const body = await readBody(event)
-    if (typeof body?.planId !== 'string') {
-      throw createError({ statusCode: 400, message: 'planId is required' })
-    }
+    const body = await readBodyWithSchema(event, createCheckoutSchema)
 
     const result = await billingService.createCheckoutSession(user.companyId, body.planId)
 
@@ -31,12 +35,12 @@ export const billingController = {
   async handleWebhook(event: H3Event) {
     const signature = getHeader(event, 'stripe-signature')
     if (!signature) {
-      throw createError({ statusCode: 400, message: 'missing stripe signature' })
+      throw apiError('validation_error', 'missing stripe signature', undefined, event)
     }
 
     const rawBody = await readRawBody(event, false)
     if (!rawBody) {
-      throw createError({ statusCode: 400, message: 'missing request body' })
+      throw apiError('validation_error', 'missing request body', undefined, event)
     }
 
     try {
@@ -47,7 +51,7 @@ export const billingController = {
       return result
     } catch (err) {
       logger.error('stripe webhook failed', { error: (err as Error).message })
-      throw createError({ statusCode: 400, message: 'webhook processing failed' })
+      throw apiError('validation_error', 'webhook processing failed', undefined, event)
     }
   },
 }

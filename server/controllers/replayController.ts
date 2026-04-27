@@ -1,7 +1,26 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { replayService } from '../services/replayService'
 import { permissionService } from '../services/permissionService'
 import { requireAuth, requirePermission } from '../utils/auth'
+import { apiError } from '../utils/errors'
+import { readBodyWithSchema } from '../utils/validation'
+
+const replayEventSchema = z.object({}).passthrough()
+
+const startSessionSchema = z.object({
+  route: z.string().trim().min(1),
+})
+
+const recordEventsSchema = z.object({
+  sessionId: z.string().trim().min(1),
+  events: z.array(replayEventSchema).min(1).max(100),
+})
+
+const endSessionSchema = z.object({
+  sessionId: z.string().trim().min(1),
+  eventCount: z.number().int().min(0).optional(),
+})
 
 export const replayController = {
   getSessions(event: H3Event) {
@@ -15,21 +34,17 @@ export const replayController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canViewInsights(user), 'view replay session')
     const id = getRouterParam(event, 'id')
-    if (!id) throw createError({ statusCode: 400, message: 'id required' })
+    if (!id) throw apiError('validation_error', 'id required', undefined, event)
 
     const data = replayService.getSession(id, user.companyId)
-    if (!data) throw createError({ statusCode: 404, message: 'session not found' })
+    if (!data) throw apiError('not_found', 'session not found', { id }, event)
 
     return data
   },
 
   async startSession(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-
-    if (typeof body?.route !== 'string') {
-      throw createError({ statusCode: 400, message: 'route is required' })
-    }
+    const body = await readBodyWithSchema(event, startSessionSchema)
 
     const session = replayService.startSession(user.id, user.name, user.companyId, body.route)
     return { session }
@@ -37,15 +52,7 @@ export const replayController = {
 
   async recordEvents(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-
-    if (typeof body?.sessionId !== 'string') {
-      throw createError({ statusCode: 400, message: 'sessionId is required' })
-    }
-
-    if (!Array.isArray(body?.events) || body.events.length === 0 || body.events.length > 100) {
-      throw createError({ statusCode: 400, message: 'events must be an array of 1-100 items' })
-    }
+    const body = await readBodyWithSchema(event, recordEventsSchema)
 
     const count = replayService.recordEvents(body.sessionId, user.companyId, body.events)
     return { recorded: count }
@@ -53,11 +60,7 @@ export const replayController = {
 
   async endSession(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-
-    if (typeof body?.sessionId !== 'string') {
-      throw createError({ statusCode: 400, message: 'sessionId is required' })
-    }
+    const body = await readBodyWithSchema(event, endSessionSchema)
 
     const session = replayService.endSession(body.sessionId, user.companyId, body.eventCount ?? 0)
     return { session }

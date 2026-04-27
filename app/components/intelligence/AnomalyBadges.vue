@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { reportClientError } from '~/utils/reportClientError'
+
 interface Anomaly {
   id: string
   type: string
@@ -13,13 +15,15 @@ interface Anomaly {
 const anomalies = ref<Anomaly[]>([])
 const loading = ref(true)
 const showPanel = ref(false)
+const ui = useUiStore()
 
 onMounted(async () => {
   try {
     const data = await $fetch<{ anomalies: Anomaly[] }>('/api/intelligence/anomalies')
     anomalies.value = data.anomalies
-  } catch {
-    // silent fail
+  } catch (error) {
+    reportClientError('intelligence.loadAnomalies', error)
+    ui.addToast({ type: 'error', message: 'failed to load anomalies' })
   } finally {
     loading.value = false
   }

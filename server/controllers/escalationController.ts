@@ -1,15 +1,33 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { escalationService } from '../services/escalationService'
 import { realtimeService } from '../services/realtimeService'
 import { auditService } from '../services/auditService'
 import { requireAuth, requirePermission } from '../utils/auth'
+import { getQueryWithSchema, readBodyWithSchema, rethrowAsApiError } from '../utils/validation'
 import { permissionService } from '../services/permissionService'
-import { AppError } from '../services/authService'
+
+const escalationsQuerySchema = z.object({
+  open: z.enum(['true', 'false']).optional(),
+})
+
+const createEscalationSchema = z.object({
+  entityType: z.string().trim().min(1),
+  entityId: z.string().trim().min(1),
+  assignedTo: z.string().trim().min(1),
+  priority: z.enum(['low', 'medium', 'high', 'critical']).optional().default('medium'),
+  reason: z.string().trim().min(1).max(2000),
+})
+
+const updateEscalationSchema = z.object({
+  id: z.string().trim().min(1),
+  status: z.enum(['acknowledged', 'resolved']),
+})
 
 export const escalationController = {
   getEscalations(event: H3Event) {
     const user = requireAuth(event)
-    const query = getQuery(event)
+    const query = getQueryWithSchema(event, escalationsQuerySchema)
     const openOnly = query.open === 'true'
 
     const escalations = openOnly
@@ -21,25 +39,15 @@ export const escalationController = {
 
   async createEscalation(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-
-    const entityType = typeof body?.entityType === 'string' ? body.entityType : ''
-    const entityId = typeof body?.entityId === 'string' ? body.entityId : ''
-    const assignedTo = typeof body?.assignedTo === 'string' ? body.assignedTo : ''
-    const priority = ['low', 'medium', 'high', 'critical'].includes(body?.priority) ? body.priority : 'medium'
-    const reason = typeof body?.reason === 'string' ? body.reason.trim() : ''
-
-    if (!entityType || !entityId || !assignedTo || !reason) {
-      throw createError({ statusCode: 400, message: 'entityType, entityId, assignedTo, and reason required' })
-    }
+    const body = await readBodyWithSchema(event, createEscalationSchema)
 
     const escalation = escalationService.create({
-      entityType,
-      entityId,
+      entityType: body.entityType,
+      entityId: body.entityId,
       createdBy: user.id,
-      assignedTo,
-      priority,
-      reason,
+      assignedTo: body.assignedTo,
+      priority: body.priority,
+      reason: body.reason,
       companyId: user.companyId,
     })
 
@@ -67,31 +75,22 @@ export const escalationController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canEditShift(user), 'manage escalation')
 
-    const body = await readBody(event)
-    const id = typeof body?.id === 'string' ? body.id : ''
-    const status = body?.status === 'acknowledged' || body?.status === 'resolved' ? body.status : null
-
-    if (!id || !status) {
-      throw createError({ statusCode: 400, message: 'id and status (acknowledged/resolved) required' })
-    }
+    const body = await readBodyWithSchema(event, updateEscalationSchema)
 
     try {
-      const escalation = escalationService.updateStatus(id, user.companyId, status)
+      const escalation = escalationService.updateStatus(body.id, user.companyId, body.status)
 
       auditService.log({
         companyId: user.companyId,
         userId: user.id,
-        action: `escalation.${status}`,
+        action: `escalation.${body.status}`,
         entityType: 'escalation',
-        entityId: id,
+        entityId: body.id,
       })
 
       return { escalation }
     } catch (e) {
-      if (e instanceof AppError) {
-        throw createError({ statusCode: e.statusCode, message: e.message })
-      }
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 }

@@ -93,7 +93,7 @@ const stats = [
           </div>
 
           <h1 class="text-5xl lg:text-6xl font-bold leading-tight mb-6">
-            <span class="text-white">run your fleet</span><br />
+            <span class="text-white">run your fleet</span><br >
             <span class="text-gradient">with clarity</span>
           </h1>
 
@@ -383,7 +383,7 @@ const stats = [
 
           <div class="relative z-10">
             <h2 class="text-3xl lg:text-4xl font-bold text-white mb-4">
-              ready to modernize<br />your operations?
+              ready to modernize<br >your operations?
             </h2>
             <p class="text-white/40 mb-8 max-w-md mx-auto">
               join companies that replaced spreadsheets and guesswork with real-time operational intelligence.

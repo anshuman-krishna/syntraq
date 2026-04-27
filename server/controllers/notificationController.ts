@@ -1,6 +1,12 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { notificationService } from '../services/notificationService'
 import { requireAuth } from '../utils/auth'
+import { readBodyWithSchema } from '../utils/validation'
+
+const markReadSchema = z.object({
+  id: z.string().trim().min(1),
+})
 
 export const notificationController = {
   getAll(event: H3Event) {
@@ -12,11 +18,7 @@ export const notificationController = {
 
   async markRead(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-
-    if (typeof body?.id !== 'string') {
-      throw createError({ statusCode: 400, message: 'id is required' })
-    }
+    const body = await readBodyWithSchema(event, markReadSchema)
 
     notificationService.markRead(body.id, user.id)
     return { ok: true }

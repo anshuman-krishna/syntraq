@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { planModel } from '../models/planModel'
 import { subscriptionModel } from '../models/subscriptionModel'
 import { usageService } from '../services/usageService'
@@ -6,8 +7,13 @@ import { billingService } from '../services/billingService'
 import { auditService } from '../services/auditService'
 import { generateId } from '../../shared/utils/id'
 import { requireAuth, requirePermission } from '../utils/auth'
+import { apiError } from '../utils/errors'
+import { readBodyWithSchema } from '../utils/validation'
 import { permissionService } from '../services/permissionService'
-import { AppError } from '../services/authService'
+
+const changePlanSchema = z.object({
+  planId: z.string().trim().min(1),
+})
 
 export const planController = {
   getPlans() {
@@ -25,14 +31,11 @@ export const planController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageCompany(user), 'manage subscription')
 
-    const body = await readBody(event)
-    if (typeof body?.planId !== 'string') {
-      throw createError({ statusCode: 400, message: 'planId is required' })
-    }
+    const body = await readBodyWithSchema(event, changePlanSchema)
 
     const plan = planModel.findById(body.planId)
     if (!plan) {
-      throw createError({ statusCode: 404, message: 'plan not found' })
+      throw apiError('not_found', 'plan not found', { planId: body.planId }, event)
     }
 
     // paid plans go through stripe when configured

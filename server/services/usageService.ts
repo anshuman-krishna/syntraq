@@ -1,6 +1,5 @@
 import { planModel } from '../models/planModel'
 import { subscriptionModel } from '../models/subscriptionModel'
-import { userModel } from '../models/userModel'
 import { employeeModel } from '../models/employeeModel'
 import { shiftModel } from '../models/shiftModel'
 import { workflowModel } from '../models/workflowModel'

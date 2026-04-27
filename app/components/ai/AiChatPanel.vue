@@ -100,7 +100,7 @@ watch(() => chat.messages.length, () => {
             placeholder="ask something..."
             class="flex-1 bg-glass-white rounded-xl px-3 py-2 text-sm text-white/80 placeholder:text-white/20 border border-glass-border/30 focus:border-sky-pastel/30 focus:outline-none transition-colors"
             :disabled="chat.loading"
-          />
+          >
           <button
             type="submit"
             class="px-3 py-2 rounded-xl bg-sky-pastel/10 text-sky-pastel/70 hover:bg-sky-pastel/20 transition-all disabled:opacity-30"

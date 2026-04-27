@@ -1,39 +1,38 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { behaviorService } from '../services/behaviorService'
 import { requireAuth } from '../utils/auth'
+import { getQueryWithSchema, readBodyWithSchema } from '../utils/validation'
+
+const behaviorEventSchema = z.object({
+  type: z.enum(['page_visit', 'action', 'hesitation']),
+  route: z.string().trim().min(1),
+  action: z.string().trim().optional(),
+  metadata: z.string().optional(),
+}).passthrough()
+
+const trackBehaviorSchema = z.object({
+  events: z.array(behaviorEventSchema).min(1).max(50),
+})
+
+const tutorialSuggestionQuerySchema = z.object({
+  route: z.string().trim().min(1),
+})
 
 export const behaviorController = {
   async track(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
+    const body = await readBodyWithSchema(event, trackBehaviorSchema)
 
-    if (!Array.isArray(body?.events) || body.events.length === 0 || body.events.length > 50) {
-      throw createError({ statusCode: 400, message: 'events must be an array of 1-50 items' })
-    }
-
-    const validTypes = ['page_visit', 'action', 'hesitation'] as const
-    const events = body.events.filter((e: Record<string, unknown>) =>
-      typeof e?.type === 'string'
-      && validTypes.includes(e.type as typeof validTypes[number])
-      && typeof e?.route === 'string',
-    )
-
-    if (events.length === 0) {
-      throw createError({ statusCode: 400, message: 'no valid events' })
-    }
-
-    behaviorService.trackBatch(user.id, user.companyId, events)
-    return { tracked: events.length }
+    behaviorService.trackBatch(user.id, user.companyId, body.events)
+    return { tracked: body.events.length }
   },
 
   suggestTutorial(event: H3Event) {
     const user = requireAuth(event)
-    const route = getQuery(event).route as string | undefined
-    if (!route) {
-      throw createError({ statusCode: 400, message: 'route query param required' })
-    }
+    const query = getQueryWithSchema(event, tutorialSuggestionQuerySchema)
 
-    const suggest = behaviorService.shouldSuggestTutorial(user.id, user.companyId, route)
+    const suggest = behaviorService.shouldSuggestTutorial(user.id, user.companyId, query.route)
     return { suggest }
   },
 }

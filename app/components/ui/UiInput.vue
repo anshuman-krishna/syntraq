@@ -7,7 +7,10 @@ const props = withDefaults(defineProps<{
   error?: string
 }>(), {
   modelValue: '',
+  label: '',
+  placeholder: '',
   type: 'text',
+  error: '',
 })
 
 const emit = defineEmits<{
@@ -49,7 +52,7 @@ function handleInput(e: Event) {
         @input="handleInput"
         @focus="focused = true"
         @blur="focused = false"
-      />
+      >
     </div>
 
     <p v-if="error" class="text-xs text-red-400/80 pl-1">{{ error }}</p>

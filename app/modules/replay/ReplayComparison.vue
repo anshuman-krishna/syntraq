@@ -35,7 +35,7 @@ interface Session {
   eventCount: number
 }
 
-const props = defineProps<{
+defineProps<{
   sessions: Session[]
 }>()
 

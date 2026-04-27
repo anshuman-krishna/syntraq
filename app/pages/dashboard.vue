@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ActivityEvent } from '@shared/types/roster'
+import { reportClientError } from '~/utils/reportClientError'
 
 interface Insight {
   id: string
@@ -10,6 +11,7 @@ interface Insight {
 }
 
 const roster = useRosterStore()
+const ui = useUiStore()
 const { startTutorial } = useTutorials()
 const { onEvent } = useRealtime()
 
@@ -17,6 +19,7 @@ const loading = ref(true)
 const activityLoading = ref(true)
 const activity = ref<ActivityEvent[]>([])
 const insights = ref<Insight[]>([])
+let stopRealtime: (() => void) | null = null
 
 const stats = ref({
   activeDrivers: 0,
@@ -115,15 +118,16 @@ onMounted(async () => {
     stats.value = data.stats
     activity.value = data.activities
     insights.value = data.insights ?? []
-  } catch {
-    // fallback to empty state
+  } catch (error) {
+    reportClientError('dashboard.loadOverview', error)
+    ui.addToast({ type: 'error', message: 'failed to load dashboard overview' })
   } finally {
     loading.value = false
     activityLoading.value = false
   }
 
   // live activity streaming
-  onEvent((event) => {
+  stopRealtime = onEvent((event) => {
     if (event.type === 'shift_created' || event.type === 'shift_updated') {
       const actionType = event.type === 'shift_created' ? 'shift_created' : 'shift_updated'
       activity.value.unshift({
@@ -136,6 +140,12 @@ onMounted(async () => {
       if (activity.value.length > 20) activity.value.pop()
     }
   })
+
+})
+
+onBeforeUnmount(() => {
+  stopRealtime?.()
+  stopRealtime = null
 })
 </script>
 

@@ -1,15 +1,33 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { approvalService } from '../services/approvalService'
 import { realtimeService } from '../services/realtimeService'
 import { auditService } from '../services/auditService'
 import { requireAuth, requirePermission } from '../utils/auth'
+import { getQueryWithSchema, readBodyWithSchema, rethrowAsApiError } from '../utils/validation'
 import { permissionService } from '../services/permissionService'
-import { AppError } from '../services/authService'
+
+const approvalsQuerySchema = z.object({
+  mine: z.enum(['true', 'false']).optional(),
+})
+
+const requestApprovalSchema = z.object({
+  entityType: z.string().trim().min(1),
+  entityId: z.string().trim().min(1),
+  assignedTo: z.string().trim().min(1),
+  note: z.string().trim().max(1000).optional(),
+})
+
+const resolveApprovalSchema = z.object({
+  id: z.string().trim().min(1),
+  status: z.enum(['approved', 'rejected']),
+  note: z.string().trim().max(1000).optional(),
+})
 
 export const approvalController = {
   getApprovals(event: H3Event) {
     const user = requireAuth(event)
-    const query = getQuery(event)
+    const query = getQueryWithSchema(event, approvalsQuerySchema)
     const mine = query.mine === 'true'
 
     const approvals = mine
@@ -21,24 +39,15 @@ export const approvalController = {
 
   async requestApproval(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-
-    const entityType = typeof body?.entityType === 'string' ? body.entityType : ''
-    const entityId = typeof body?.entityId === 'string' ? body.entityId : ''
-    const assignedTo = typeof body?.assignedTo === 'string' ? body.assignedTo : ''
-    const note = typeof body?.note === 'string' ? body.note : undefined
-
-    if (!entityType || !entityId || !assignedTo) {
-      throw createError({ statusCode: 400, message: 'entityType, entityId, and assignedTo required' })
-    }
+    const body = await readBodyWithSchema(event, requestApprovalSchema)
 
     const approval = approvalService.requestApproval({
-      entityType,
-      entityId,
+      entityType: body.entityType,
+      entityId: body.entityId,
       requestedBy: user.id,
-      assignedTo,
+      assignedTo: body.assignedTo,
       companyId: user.companyId,
-      note,
+      note: body.note,
     })
 
     realtimeService.broadcast({
@@ -57,24 +66,17 @@ export const approvalController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canEditShift(user), 'resolve approval')
 
-    const body = await readBody(event)
-    const id = typeof body?.id === 'string' ? body.id : ''
-    const status = body?.status === 'approved' || body?.status === 'rejected' ? body.status : null
-    const note = typeof body?.note === 'string' ? body.note : undefined
-
-    if (!id || !status) {
-      throw createError({ statusCode: 400, message: 'id and status (approved/rejected) required' })
-    }
+    const body = await readBodyWithSchema(event, resolveApprovalSchema)
 
     try {
-      const approval = approvalService.resolve(id, user.companyId, status, note)
+      const approval = approvalService.resolve(body.id, user.companyId, body.status, body.note)
 
       auditService.log({
         companyId: user.companyId,
         userId: user.id,
-        action: `approval.${status}`,
+        action: `approval.${body.status}`,
         entityType: 'approval',
-        entityId: id,
+        entityId: body.id,
       })
 
       realtimeService.broadcast({
@@ -88,10 +90,7 @@ export const approvalController = {
 
       return { approval }
     } catch (e) {
-      if (e instanceof AppError) {
-        throw createError({ statusCode: e.statusCode, message: e.message })
-      }
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 }

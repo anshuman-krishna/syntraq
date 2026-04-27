@@ -1,7 +1,6 @@
 import { db } from '../db/client'
 import { companies } from '../db/schema'
 import { cacheService } from './cacheService'
-import { rateLimitService } from './rateLimitService'
 
 export const healthService = {
   check() {

@@ -67,13 +67,13 @@ async function handleSubmit() {
                 type="text"
                 :placeholder="`step ${i + 1} name`"
                 class="flex-1 bg-glass-white rounded-xl px-3 py-2 text-sm text-white/80 placeholder:text-white/20 border border-glass-border/30 focus:border-sky-pastel/30 focus:outline-none transition-colors"
-              />
+              >
               <input
                 v-model="step.description"
                 type="text"
                 placeholder="description"
                 class="flex-1 bg-glass-white rounded-xl px-3 py-2 text-sm text-white/80 placeholder:text-white/20 border border-glass-border/30 focus:border-sky-pastel/30 focus:outline-none transition-colors hidden sm:block"
-              />
+              >
             </div>
             <button
               type="button"

@@ -1,23 +1,32 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { aiService } from '../services/aiService'
+import { apiError } from '../utils/errors'
 import { requireAuth } from '../utils/auth'
+import { readBodyWithSchema } from '../utils/validation'
+
+const chatSchema = z.object({
+  message: z.string().trim().min(1).max(500),
+  context: z.object({
+    route: z.string().trim().min(1).optional(),
+    module: z.string().trim().min(1).optional(),
+  }).optional(),
+})
 
 export const aiController = {
   async chat(event: H3Event) {
     const user = requireAuth(event)
-    const body = await readBody(event)
-
-    const message = typeof body?.message === 'string' ? body.message.trim() : ''
-    if (!message || message.length > 500) {
-      throw createError({ statusCode: 400, message: 'message must be 1-500 characters' })
-    }
+    const body = await readBodyWithSchema(event, chatSchema)
     const context = {
-      route: typeof body?.context?.route === 'string' ? body.context.route : '/',
-      module: typeof body?.context?.module === 'string' ? body.context.module : undefined,
+      route: body.context?.route ?? '/',
+      module: body.context?.module,
       companyId: user.companyId,
     }
 
-    const response = aiService.processMessage(message, context)
+    const response = aiService.processMessage(body.message, context)
+    if (!response) {
+      throw apiError('internal_error', 'ai response unavailable', undefined, event)
+    }
     return { message: response }
   },
 }

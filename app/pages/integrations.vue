@@ -256,7 +256,7 @@ function formatDate(date: string | null) {
               v-model="newKeyName"
               class="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-pastel/30"
               placeholder="e.g. production, staging"
-            />
+            >
           </div>
           <div>
             <label class="block text-xs text-white/40 mb-2">permissions</label>
@@ -270,7 +270,7 @@ function formatDate(date: string | null) {
                   v-model="newKeyPermissions[perm as keyof typeof newKeyPermissions]"
                   type="checkbox"
                   class="rounded"
-                />
+                >
                 <span class="text-xs text-white/60">{{ perm }}</span>
               </label>
             </div>
@@ -347,7 +347,7 @@ function formatDate(date: string | null) {
               v-model="newWebhookUrl"
               class="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-pastel/30"
               placeholder="https://your-server.com/webhook"
-            />
+            >
           </div>
           <div>
             <label class="block text-xs text-white/40 mb-2">events</label>
@@ -438,7 +438,7 @@ function formatDate(date: string | null) {
               v-model="newAutomationName"
               class="w-full px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-white placeholder-white/20 focus:outline-none focus:border-sky-pastel/30"
               placeholder="e.g. notify on shift completion"
-            />
+            >
           </div>
           <div>
             <label class="block text-xs text-white/40 mb-2">trigger</label>

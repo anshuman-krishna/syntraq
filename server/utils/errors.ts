@@ -1,4 +1,4 @@
-import type { H3Event } from 'h3'
+import { createError, type H3Event } from 'h3'
 
 export type ErrorCode =
   | 'validation_error'
@@ -40,7 +40,7 @@ export function apiError(
     code,
     message,
     ...(details ? { details } : {}),
-    ...(event?.context.requestId ? { requestId: event.context.requestId } : {}),
+    ...(event?.context?.requestId ? { requestId: event.context.requestId } : {}),
   }
 
   return createError({

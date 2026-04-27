@@ -224,7 +224,7 @@ onUnmounted(() => {
               placeholder="type a command..."
               class="flex-1 bg-transparent py-4 text-sm text-white/90 placeholder:text-white/25 outline-none"
               @keydown="handleKeydown"
-            />
+            >
             <kbd class="px-1.5 py-0.5 rounded text-[10px] text-white/20 border border-glass-border/50 font-mono">esc</kbd>
           </div>
 

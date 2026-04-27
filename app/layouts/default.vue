@@ -3,7 +3,7 @@ const sidebar = useSidebarStore()
 const route = useRoute()
 const { startTracking, suggestionRef, getTutorialForRoute } = useTutorials()
 useBehavior()
-const { connected } = useRealtime()
+useRealtime()
 
 onMounted(() => {
   startTracking()

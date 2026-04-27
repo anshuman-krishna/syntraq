@@ -94,7 +94,7 @@ const operationalFeatures = [
         </div>
 
         <h1 class="text-4xl lg:text-5xl font-bold text-white mb-4">
-          everything your team needs,<br />
+          everything your team needs,<br >
           <span class="text-gradient">nothing it doesn't</span>
         </h1>
         <p class="text-lg text-white/40 max-w-lg mx-auto">

@@ -97,25 +97,25 @@ most tools help you do work. very few help you understand it or improve it. synt
 install dependencies:
 
 ```bash
-pnpm install
+npm install
 ```
 
 run the dev server:
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 build for production:
 
 ```bash
-pnpm build
+npm run build
 ```
 
 preview the production build:
 
 ```bash
-pnpm preview
+npm run preview
 ```
 
 more info in the [nuxt deployment docs](https://nuxt.com/docs/getting-started/deployment).

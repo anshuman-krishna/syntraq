@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { reportClientError } from '~/utils/reportClientError'
+
 interface Approval {
   id: string
   entityType: string
@@ -16,6 +18,7 @@ const props = defineProps<{
 }>()
 
 const auth = useAuthStore()
+const ui = useUiStore()
 const approvals = ref<Approval[]>([])
 const loading = ref(true)
 
@@ -25,8 +28,9 @@ onMounted(async () => {
     approvals.value = data.approvals.filter(
       a => a.entityType === props.entityType && a.entityId === props.entityId
     )
-  } catch {
-    // silent fail
+  } catch (error) {
+    reportClientError('approvals.load', error, { entityType: props.entityType, entityId: props.entityId })
+    ui.addToast({ type: 'error', message: 'failed to load approvals' })
   } finally {
     loading.value = false
   }
@@ -40,13 +44,11 @@ async function resolve(id: string, status: 'approved' | 'rejected') {
     })
     const idx = approvals.value.findIndex(a => a.id === id)
     if (idx >= 0) approvals.value[idx].status = status
-  } catch {
-    // silent fail
+  } catch (error) {
+    reportClientError('approvals.resolve', error, { entityType: props.entityType, entityId: props.entityId, id, status })
+    ui.addToast({ type: 'error', message: 'failed to update approval' })
   }
 }
-
-const pending = computed(() => approvals.value.filter(a => a.status === 'pending'))
-const resolved = computed(() => approvals.value.filter(a => a.status !== 'pending'))
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-400/10 text-yellow-400/60 border-yellow-400/20',

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { reportClientError } from '~/utils/reportClientError'
+
 interface Comment {
   id: string
   userId: string
@@ -14,6 +16,7 @@ const props = defineProps<{
 }>()
 
 const auth = useAuthStore()
+const ui = useUiStore()
 const comments = ref<Comment[]>([])
 const loading = ref(true)
 const newComment = ref('')
@@ -25,8 +28,9 @@ onMounted(async () => {
       `/api/comments?entityType=${props.entityType}&entityId=${props.entityId}`
     )
     comments.value = data.comments
-  } catch {
-    // silent fail
+  } catch (error) {
+    reportClientError('comments.load', error, { entityType: props.entityType, entityId: props.entityId })
+    ui.addToast({ type: 'error', message: 'failed to load comments' })
   } finally {
     loading.value = false
   }
@@ -48,8 +52,9 @@ async function addComment() {
     })
     comments.value.push(data.comment)
     newComment.value = ''
-  } catch {
-    // silent fail
+  } catch (error) {
+    reportClientError('comments.add', error, { entityType: props.entityType, entityId: props.entityId })
+    ui.addToast({ type: 'error', message: 'failed to post comment' })
   } finally {
     sending.value = false
   }
@@ -63,8 +68,9 @@ async function resolve(id: string) {
     })
     const idx = comments.value.findIndex(c => c.id === id)
     if (idx >= 0) comments.value[idx].resolved = true
-  } catch {
-    // silent fail
+  } catch (error) {
+    reportClientError('comments.resolve', error, { entityType: props.entityType, entityId: props.entityId, id })
+    ui.addToast({ type: 'error', message: 'failed to resolve comment' })
   }
 }
 

@@ -4,6 +4,10 @@ import type { Workflow } from '@shared/types/workflow'
 
 let eventSource: EventSource | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let presenceTimer: ReturnType<typeof setInterval> | null = null
+let activeConsumers = 0
+let stopAuthWatch: ReturnType<typeof watch> | null = null
+let stopRouteWatch: ReturnType<typeof watch> | null = null
 const RECONNECT_DELAY = 3000
 const PRESENCE_INTERVAL = 20_000
 
@@ -131,10 +135,8 @@ export function useRealtime() {
     connected.value = false
   }
 
-  // presence heartbeat
-  let presenceTimer: ReturnType<typeof setInterval> | null = null
-
   function startPresence() {
+    if (presenceTimer) return
     sendPresence()
     presenceTimer = setInterval(sendPresence, PRESENCE_INTERVAL)
   }
@@ -173,30 +175,41 @@ export function useRealtime() {
     )
   }
 
-  // auto-connect on mount, disconnect on unmount
   onMounted(() => {
-    connect()
-    startPresence()
-  })
+    activeConsumers++
 
-  onBeforeUnmount(() => {
-    stopPresence()
-  })
-
-  // reconnect on auth change
-  watch(() => auth.isAuthenticated, (authenticated) => {
-    if (authenticated) {
+    if (activeConsumers === 1) {
       connect()
       startPresence()
-    } else {
-      disconnect()
-      stopPresence()
+
+      stopAuthWatch = watch(() => auth.isAuthenticated, (authenticated) => {
+        if (authenticated) {
+          connect()
+          startPresence()
+        } else {
+          disconnect()
+          stopPresence()
+        }
+      })
+
+      stopRouteWatch = watch(() => route.path, () => {
+        sendPresence()
+      })
     }
   })
 
-  // update presence on route change
-  watch(() => route.path, () => {
-    sendPresence()
+  onBeforeUnmount(() => {
+    activeConsumers = Math.max(activeConsumers - 1, 0)
+
+    if (activeConsumers === 0) {
+      stopAuthWatch?.()
+      stopAuthWatch = null
+      stopRouteWatch?.()
+      stopRouteWatch = null
+      stopPresence()
+      disconnect()
+      eventListeners.length = 0
+    }
   })
 
   return {

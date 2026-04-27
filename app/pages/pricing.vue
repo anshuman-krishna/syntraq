@@ -8,7 +8,7 @@ useHead({
   meta: [
     { name: 'description', content: 'simple, transparent pricing for syntraq. start free, upgrade as you grow. plans for small teams to enterprise fleets.' },
     { property: 'og:title', content: 'pricing — syntraq' },
-    { property: 'og:description', content: 'start free. upgrade when you're ready. no surprises.' },
+    { property: 'og:description', content: 'start free. upgrade when you\'re ready. no surprises.' },
   ],
 })
 

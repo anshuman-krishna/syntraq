@@ -5,5 +5,6 @@ export default withNuxt({
     'no-console': 'warn',
     'no-debugger': 'error',
     'prefer-const': 'error',
+    'vue/multi-word-component-names': 'off',
   },
 })

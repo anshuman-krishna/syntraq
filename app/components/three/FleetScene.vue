@@ -24,16 +24,6 @@ interface NodeData {
 
 const nodeMap = new Map<THREE.Object3D, NodeData>()
 
-const statusColors: Record<string, number> = {
-  available: 0xb8f2e6,
-  'on-route': 0xa7d8ff,
-  maintenance: 0xffd6c9,
-  active: 0xb8f2e6,
-  scheduled: 0xa7d8ff,
-  completed: 0x555570,
-  cancelled: 0xff6b6b,
-}
-
 const roleColors: Record<string, number> = {
   driver: 0xa7d8ff,
   operator: 0xb8f2e6,

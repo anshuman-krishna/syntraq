@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { reportClientError } from '~/utils/reportClientError'
+
 interface Message {
   id: string
   userId: string
@@ -10,6 +12,7 @@ interface Message {
 }
 
 const auth = useAuthStore()
+const ui = useUiStore()
 const { onEvent } = useRealtime()
 
 const messages = ref<Message[]>([])
@@ -17,11 +20,12 @@ const loading = ref(true)
 const channel = ref('general')
 const messagesContainer = ref<HTMLElement | null>(null)
 const typingUsers = ref<Set<string>>(new Set())
+let stopRealtime: (() => void) | null = null
 
 onMounted(async () => {
   await fetchMessages()
 
-  onEvent((event) => {
+  stopRealtime = onEvent((event) => {
     if ((event.type as string) === 'message_created' && event.userId !== auth.user?.id) {
       const msg = event.payload.message as Message
       if (msg.channelId === channel.value) {
@@ -34,6 +38,12 @@ onMounted(async () => {
       setTimeout(() => typingUsers.value.delete(event.userName), 3000)
     }
   })
+
+})
+
+onBeforeUnmount(() => {
+  stopRealtime?.()
+  stopRealtime = null
 })
 
 async function fetchMessages() {
@@ -42,8 +52,9 @@ async function fetchMessages() {
     const data = await $fetch<{ messages: Message[] }>(`/api/messages?channel=${channel.value}`)
     messages.value = data.messages
     nextTick(() => scrollToBottom())
-  } catch {
-    // silent fail
+  } catch (error) {
+    reportClientError('chat.fetchMessages', error, { channel: channel.value })
+    ui.addToast({ type: 'error', message: 'failed to load chat messages' })
   } finally {
     loading.value = false
   }
@@ -57,8 +68,9 @@ async function sendMessage(content: string) {
     })
     messages.value.push(data.message)
     nextTick(() => scrollToBottom())
-  } catch {
-    // silent fail
+  } catch (error) {
+    reportClientError('chat.sendMessage', error, { channel: channel.value })
+    ui.addToast({ type: 'error', message: 'failed to send message' })
   }
 }
 

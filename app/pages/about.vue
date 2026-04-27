@@ -54,7 +54,7 @@ const milestones = [
 
       <div class="max-w-3xl mx-auto text-center relative z-10">
         <h1 class="text-4xl lg:text-5xl font-bold text-white mb-6">
-          replacing chaos<br />
+          replacing chaos<br >
           <span class="text-gradient">with clarity</span>
         </h1>
         <p class="text-lg text-white/40 max-w-lg mx-auto leading-relaxed">

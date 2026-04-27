@@ -1,11 +1,28 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { workflowService } from '../services/workflowService'
 import { permissionService } from '../services/permissionService'
 import { auditService } from '../services/auditService'
 import { realtimeService } from '../services/realtimeService'
 import { usageService } from '../services/usageService'
-import { AppError } from '../services/authService'
 import { requireAuth, requirePermission } from '../utils/auth'
+import { apiError } from '../utils/errors'
+import { readBodyWithSchema, rethrowAsApiError } from '../utils/validation'
+
+const workflowStepSchema = z.object({
+  name: z.string().trim().min(1).max(100).optional(),
+  description: z.string().trim().max(500).optional(),
+}).passthrough()
+
+const createWorkflowSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  description: z.string().trim().max(500).optional(),
+  steps: z.array(workflowStepSchema).min(1).max(50),
+})
+
+const updateWorkflowStatusSchema = z.object({
+  status: z.enum(['draft', 'active', 'archived']),
+})
 
 export const workflowController = {
   getAll(event: H3Event) {
@@ -19,14 +36,13 @@ export const workflowController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canViewWorkflows(user), 'view workflows')
     const id = getRouterParam(event, 'id')
-    if (!id) throw createError({ statusCode: 400, message: 'id required' })
+    if (!id) throw apiError('validation_error', 'id required', undefined, event)
 
     try {
       const workflow = workflowService.getById(id, user.companyId)
       return { workflow }
     } catch (e) {
-      if (e instanceof AppError) throw createError({ statusCode: e.statusCode, message: e.message })
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 
@@ -35,25 +51,17 @@ export const workflowController = {
     requirePermission(user, permissionService.canManageWorkflows(user), 'manage workflows')
     usageService.checkWorkflowLimit(user.companyId)
 
-    const body = await readBody(event)
+    const body = await readBodyWithSchema(event, createWorkflowSchema)
 
-    if (!body?.name || typeof body.name !== 'string' || body.name.length > 100) {
-      throw createError({ statusCode: 400, message: 'name is required (max 100 chars)' })
-    }
-
-    if (!Array.isArray(body?.steps) || body.steps.length === 0 || body.steps.length > 50) {
-      throw createError({ statusCode: 400, message: 'steps must be an array of 1-50 items' })
-    }
-
-    const steps = body.steps.map((s: Record<string, unknown>, i: number) => ({
-      name: typeof s.name === 'string' ? s.name : `step ${i + 1}`,
-      description: typeof s.description === 'string' ? s.description : undefined,
+    const steps = body.steps.map((step, i) => ({
+      name: step.name ?? `step ${i + 1}`,
+      description: step.description,
       order: i + 1,
     }))
 
     const workflow = workflowService.create({
-      name: body.name.trim(),
-      description: typeof body.description === 'string' ? body.description.trim() : undefined,
+      name: body.name,
+      description: body.description,
       steps,
     }, user.id, user.companyId)
 
@@ -81,13 +89,9 @@ export const workflowController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageWorkflows(user), 'manage workflows')
     const id = getRouterParam(event, 'id')
-    if (!id) throw createError({ statusCode: 400, message: 'id required' })
+    if (!id) throw apiError('validation_error', 'id required', undefined, event)
 
-    const body = await readBody(event)
-    const validStatuses = ['draft', 'active', 'archived'] as const
-    if (!validStatuses.includes(body?.status)) {
-      throw createError({ statusCode: 400, message: 'invalid status' })
-    }
+    const body = await readBodyWithSchema(event, updateWorkflowStatusSchema)
 
     try {
       const workflow = workflowService.updateStatus(id, user.companyId, body.status)
@@ -111,8 +115,7 @@ export const workflowController = {
 
       return { workflow }
     } catch (e) {
-      if (e instanceof AppError) throw createError({ statusCode: e.statusCode, message: e.message })
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 
@@ -120,7 +123,7 @@ export const workflowController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageWorkflows(user), 'manage workflows')
     const id = getRouterParam(event, 'id')
-    if (!id) throw createError({ statusCode: 400, message: 'id required' })
+    if (!id) throw apiError('validation_error', 'id required', undefined, event)
 
     try {
       workflowService.remove(id, user.companyId)
@@ -144,8 +147,7 @@ export const workflowController = {
 
       return { success: true }
     } catch (e) {
-      if (e instanceof AppError) throw createError({ statusCode: e.statusCode, message: e.message })
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 }

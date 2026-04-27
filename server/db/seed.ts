@@ -407,7 +407,6 @@ async function seed() {
 
   // seed shifts
   const today = new Date()
-  const statuses = ['scheduled', 'active', 'completed', 'cancelled'] as const
   let shiftCount = 0
 
   employeeData.forEach((_, empIdx) => {
@@ -418,7 +417,7 @@ async function seed() {
       const startHour = 6 + Math.floor(Math.random() * 8)
       const duration = 6 + Math.floor(Math.random() * 6)
 
-      let status: typeof statuses[number]
+      let status: 'scheduled' | 'active' | 'completed' | 'cancelled'
       if (d < -1) status = 'completed'
       else if (d === -1) status = Math.random() > 0.2 ? 'completed' : 'cancelled'
       else if (d === 0) status = Math.random() > 0.3 ? 'active' : 'completed'

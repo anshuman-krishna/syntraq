@@ -27,10 +27,6 @@ function parseHour(time: string): number {
   return parseInt(time.split(':')[0]!, 10)
 }
 
-function daysBetween(a: string, b: string): number {
-  return Math.abs(new Date(a).getTime() - new Date(b).getTime()) / 86400000
-}
-
 function getWeekNumber(date: string): number {
   const d = new Date(date)
   const start = new Date(d.getFullYear(), 0, 1)

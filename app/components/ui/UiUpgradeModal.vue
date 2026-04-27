@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Plan } from '@shared/types/plan'
+import { reportClientError } from '~/utils/reportClientError'
 
 const props = defineProps<{
   open: boolean
@@ -11,6 +12,7 @@ const emit = defineEmits<{
   select: [planId: string]
 }>()
 
+const ui = useUiStore()
 const plans = ref<Plan[]>([])
 const loading = ref(true)
 const changing = ref(false)
@@ -20,8 +22,9 @@ watch(() => props.open, async (isOpen) => {
   try {
     const data = await $fetch<{ plans: Plan[] }>('/api/plans')
     plans.value = data.plans
-  } catch {
-    // handled by empty state
+  } catch (error) {
+    reportClientError('billing.loadPlans', error)
+    ui.addToast({ type: 'error', message: 'failed to load billing plans' })
   } finally {
     loading.value = false
   }
@@ -45,8 +48,9 @@ async function selectPlan(planId: string) {
 
     // direct plan change (free plan or stripe not configured)
     emit('select', planId)
-  } catch {
-    emit('select', planId)
+  } catch (error) {
+    reportClientError('billing.selectPlan', error, { planId })
+    ui.addToast({ type: 'error', message: 'failed to change plan' })
   } finally {
     changing.value = false
   }
