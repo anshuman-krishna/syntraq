@@ -42,7 +42,7 @@ the point is that these things talk to each other. a shift change triggers a not
 
 ## tech
 
-frontend: nuxt 3 (typescript), tailwindcss, three.js, pinia
+frontend: nuxt 4 (typescript), tailwindcss, three.js, pinia
 
 backend: nitro server, drizzle orm, sqlite (turso-ready)
 
@@ -93,6 +93,8 @@ most tools help you do work. very few help you understand it or improve it. synt
 ---
 
 ## setup
+
+use a standard local node installation in your terminal. on macOS, app-bundled runtimes can trip native addon loading for packages like `better-sqlite3`, `rollup`, or `oxc`.
 
 install dependencies:
 

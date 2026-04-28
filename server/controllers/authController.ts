@@ -1,32 +1,19 @@
 import type { H3Event } from 'h3'
 import { lucia } from '../db/auth'
-import { authService, AppError } from '../services/authService'
+import { authService } from '../services/authService'
 import { auditService } from '../services/auditService'
 import { emailService } from '../services/emailService'
 import { companyModel } from '../models/companyModel'
 import { loginSchema, registerSchema } from '../../shared/utils/validation'
-import { apiError } from '../utils/errors'
-
-function fromAppError(e: AppError, event: H3Event) {
-  const code = e.statusCode === 401 ? 'unauthenticated'
-    : e.statusCode === 403 ? 'forbidden'
-    : e.statusCode === 404 ? 'not_found'
-    : e.statusCode === 409 ? 'conflict'
-    : 'validation_error'
-  return apiError(code, e.message, undefined, event)
-}
+import { requireAuth } from '../utils/auth'
+import { readBodyWithSchema, rethrowAsApiError } from '../utils/validation'
 
 export const authController = {
   async register(event: H3Event) {
-    const body = await readBody(event)
-    const parsed = registerSchema.safeParse(body)
-
-    if (!parsed.success) {
-      throw apiError('validation_error', parsed.error.issues[0]?.message ?? 'invalid input', { issues: parsed.error.issues }, event)
-    }
+    const body = await readBodyWithSchema(event, registerSchema)
 
     try {
-      const user = await authService.register(parsed.data)
+      const user = await authService.register(body)
       const session = await lucia.createSession(user.id, {})
       appendResponseHeader(event, 'Set-Cookie', lucia.createSessionCookie(session.id).serialize())
 
@@ -42,21 +29,15 @@ export const authController = {
 
       return { user }
     } catch (e) {
-      if (e instanceof AppError) throw fromAppError(e, event)
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 
   async login(event: H3Event) {
-    const body = await readBody(event)
-    const parsed = loginSchema.safeParse(body)
-
-    if (!parsed.success) {
-      throw apiError('validation_error', parsed.error.issues[0]?.message ?? 'invalid input', { issues: parsed.error.issues }, event)
-    }
+    const body = await readBodyWithSchema(event, loginSchema)
 
     try {
-      const user = await authService.login(parsed.data)
+      const user = await authService.login(body)
       const session = await lucia.createSession(user.id, {})
       appendResponseHeader(event, 'Set-Cookie', lucia.createSessionCookie(session.id).serialize())
 
@@ -69,8 +50,7 @@ export const authController = {
 
       return { user }
     } catch (e) {
-      if (e instanceof AppError) throw fromAppError(e, event)
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 
@@ -84,11 +64,7 @@ export const authController = {
   },
 
   async me(event: H3Event) {
-    const user = event.context.user
-    if (!user) {
-      throw apiError('unauthenticated', 'not authenticated', undefined, event)
-    }
-
+    const user = requireAuth(event)
     const company = companyModel.findById(user.companyId)
 
     return {

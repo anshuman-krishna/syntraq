@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { z } from 'zod'
 import { requireApiKey, requireApiPermission } from '../utils/apiAuth'
 import { employeeModel } from '../models/employeeModel'
 import { shiftModel } from '../models/shiftModel'
@@ -6,6 +7,17 @@ import { vehicleModel } from '../models/vehicleModel'
 import { workflowModel } from '../models/workflowModel'
 import { apiUsageModel } from '../models/apiUsageModel'
 import { generateId } from '../../shared/utils/id'
+import { apiError } from '../utils/errors'
+import { getParamsWithSchema, getQueryWithSchema } from '../utils/validation'
+
+const idParamSchema = z.object({
+  id: z.string().trim().min(1),
+})
+
+const shiftsQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  status: z.enum(['scheduled', 'active', 'completed', 'cancelled']).optional(),
+})
 
 function logUsage(event: H3Event, keyId: string, companyId: string, statusCode: number) {
   const start = event.context._apiStart as number | undefined
@@ -38,13 +50,12 @@ export const publicApiController = {
     const ctx = requireApiKey(event)
     requireApiPermission(ctx, 'employees')
 
-    const id = getRouterParam(event, 'id')
-    if (!id) throw createError({ statusCode: 400, message: 'id is required' })
+    const { id } = getParamsWithSchema(event, idParamSchema)
 
     const employee = employeeModel.findById(id, ctx.companyId)
     if (!employee) {
       logUsage(event, ctx.keyId, ctx.companyId, 404)
-      throw createError({ statusCode: 404, message: 'employee not found' })
+      throw apiError('not_found', 'employee not found', { id }, event)
     }
 
     logUsage(event, ctx.keyId, ctx.companyId, 200)
@@ -57,16 +68,15 @@ export const publicApiController = {
     const ctx = requireApiKey(event)
     requireApiPermission(ctx, 'shifts')
 
-    const query = getQuery(event)
-    const date = typeof query.date === 'string' ? query.date : null
-    const status = typeof query.status === 'string' ? query.status : null
-    const validStatuses = ['scheduled', 'active', 'completed', 'cancelled'] as const
+    const query = getQueryWithSchema(event, shiftsQuerySchema)
+    const date = query.date ?? null
+    const status = query.status ?? null
 
     let shifts
     if (date) {
       shifts = shiftModel.findByDate(date, ctx.companyId)
-    } else if (status && validStatuses.includes(status as typeof validStatuses[number])) {
-      shifts = shiftModel.findByStatus(status as typeof validStatuses[number], ctx.companyId)
+    } else if (status) {
+      shifts = shiftModel.findByStatus(status, ctx.companyId)
     } else {
       shifts = shiftModel.findAll(ctx.companyId)
     }
@@ -80,13 +90,12 @@ export const publicApiController = {
     const ctx = requireApiKey(event)
     requireApiPermission(ctx, 'shifts')
 
-    const id = getRouterParam(event, 'id')
-    if (!id) throw createError({ statusCode: 400, message: 'id is required' })
+    const { id } = getParamsWithSchema(event, idParamSchema)
 
     const shift = shiftModel.findById(id, ctx.companyId)
     if (!shift) {
       logUsage(event, ctx.keyId, ctx.companyId, 404)
-      throw createError({ statusCode: 404, message: 'shift not found' })
+      throw apiError('not_found', 'shift not found', { id }, event)
     }
 
     logUsage(event, ctx.keyId, ctx.companyId, 200)
@@ -109,13 +118,12 @@ export const publicApiController = {
     const ctx = requireApiKey(event)
     requireApiPermission(ctx, 'vehicles')
 
-    const id = getRouterParam(event, 'id')
-    if (!id) throw createError({ statusCode: 400, message: 'id is required' })
+    const { id } = getParamsWithSchema(event, idParamSchema)
 
     const vehicle = vehicleModel.findById(id, ctx.companyId)
     if (!vehicle) {
       logUsage(event, ctx.keyId, ctx.companyId, 404)
-      throw createError({ statusCode: 404, message: 'vehicle not found' })
+      throw apiError('not_found', 'vehicle not found', { id }, event)
     }
 
     logUsage(event, ctx.keyId, ctx.companyId, 200)

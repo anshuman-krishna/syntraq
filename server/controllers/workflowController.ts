@@ -6,8 +6,7 @@ import { auditService } from '../services/auditService'
 import { realtimeService } from '../services/realtimeService'
 import { usageService } from '../services/usageService'
 import { requireAuth, requirePermission } from '../utils/auth'
-import { apiError } from '../utils/errors'
-import { readBodyWithSchema, rethrowAsApiError } from '../utils/validation'
+import { getParamsWithSchema, readBodyWithSchema, rethrowAsApiError } from '../utils/validation'
 
 const workflowStepSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
@@ -24,6 +23,10 @@ const updateWorkflowStatusSchema = z.object({
   status: z.enum(['draft', 'active', 'archived']),
 })
 
+const workflowIdParamSchema = z.object({
+  id: z.string().trim().min(1),
+})
+
 export const workflowController = {
   getAll(event: H3Event) {
     const user = requireAuth(event)
@@ -35,8 +38,7 @@ export const workflowController = {
   getById(event: H3Event) {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canViewWorkflows(user), 'view workflows')
-    const id = getRouterParam(event, 'id')
-    if (!id) throw apiError('validation_error', 'id required', undefined, event)
+    const { id } = getParamsWithSchema(event, workflowIdParamSchema)
 
     try {
       const workflow = workflowService.getById(id, user.companyId)
@@ -88,8 +90,7 @@ export const workflowController = {
   async updateStatus(event: H3Event) {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageWorkflows(user), 'manage workflows')
-    const id = getRouterParam(event, 'id')
-    if (!id) throw apiError('validation_error', 'id required', undefined, event)
+    const { id } = getParamsWithSchema(event, workflowIdParamSchema)
 
     const body = await readBodyWithSchema(event, updateWorkflowStatusSchema)
 
@@ -122,8 +123,7 @@ export const workflowController = {
   remove(event: H3Event) {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageWorkflows(user), 'manage workflows')
-    const id = getRouterParam(event, 'id')
-    if (!id) throw apiError('validation_error', 'id required', undefined, event)
+    const { id } = getParamsWithSchema(event, workflowIdParamSchema)
 
     try {
       workflowService.remove(id, user.companyId)

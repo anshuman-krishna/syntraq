@@ -4,8 +4,7 @@ import { apiKeyService } from '../services/apiKeyService'
 import { auditService } from '../services/auditService'
 import { requireAuth, requirePermission } from '../utils/auth'
 import { permissionService } from '../services/permissionService'
-import { AppError } from '../services/authService'
-import { apiError } from '../utils/errors'
+import { readBodyWithSchema, rethrowAsApiError } from '../utils/validation'
 
 const permissionsSchema = z.object({
   employees: z.boolean().optional(),
@@ -21,10 +20,6 @@ const createSchema = z.object({
 
 const idSchema = z.object({ id: z.string().min(1) })
 
-function mapAppError(e: AppError, event: H3Event) {
-  return apiError(e.statusCode === 404 ? 'not_found' : 'validation_error', e.message, undefined, event)
-}
-
 export const apiKeyController = {
   async list(event: H3Event) {
     const user = requireAuth(event)
@@ -36,13 +31,10 @@ export const apiKeyController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageCompany(user), 'create api key', event)
 
-    const parsed = createSchema.safeParse(await readBody(event))
-    if (!parsed.success) {
-      throw apiError('validation_error', parsed.error.issues[0]?.message ?? 'invalid input', { issues: parsed.error.issues }, event)
-    }
+    const body = await readBodyWithSchema(event, createSchema)
 
     try {
-      const result = await apiKeyService.create(user.companyId, parsed.data.name, parsed.data.permissions)
+      const result = await apiKeyService.create(user.companyId, body.name, body.permissions)
 
       auditService.log({
         companyId: user.companyId,
@@ -50,13 +42,12 @@ export const apiKeyController = {
         action: 'api_key.created',
         entityType: 'api_key',
         entityId: result.id,
-        metadata: { name: parsed.data.name, permissions: parsed.data.permissions },
+        metadata: { name: body.name, permissions: body.permissions },
       })
 
       return { key: result }
     } catch (e) {
-      if (e instanceof AppError) throw mapAppError(e, event)
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 
@@ -64,26 +55,22 @@ export const apiKeyController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageCompany(user), 'rotate api key', event)
 
-    const parsed = idSchema.safeParse(await readBody(event))
-    if (!parsed.success) {
-      throw apiError('validation_error', parsed.error.issues[0]?.message ?? 'invalid input', { issues: parsed.error.issues }, event)
-    }
+    const body = await readBodyWithSchema(event, idSchema)
 
     try {
-      const result = await apiKeyService.rotate(parsed.data.id, user.companyId)
+      const result = await apiKeyService.rotate(body.id, user.companyId)
 
       auditService.log({
         companyId: user.companyId,
         userId: user.id,
         action: 'api_key.rotated',
         entityType: 'api_key',
-        entityId: parsed.data.id,
+        entityId: body.id,
       })
 
       return { key: result }
     } catch (e) {
-      if (e instanceof AppError) throw mapAppError(e, event)
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 
@@ -91,26 +78,22 @@ export const apiKeyController = {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canManageCompany(user), 'revoke api key', event)
 
-    const parsed = idSchema.safeParse(await readBody(event))
-    if (!parsed.success) {
-      throw apiError('validation_error', parsed.error.issues[0]?.message ?? 'invalid input', { issues: parsed.error.issues }, event)
-    }
+    const body = await readBodyWithSchema(event, idSchema)
 
     try {
-      apiKeyService.revoke(parsed.data.id, user.companyId)
+      apiKeyService.revoke(body.id, user.companyId)
 
       auditService.log({
         companyId: user.companyId,
         userId: user.id,
         action: 'api_key.revoked',
         entityType: 'api_key',
-        entityId: parsed.data.id,
+        entityId: body.id,
       })
 
       return { success: true }
     } catch (e) {
-      if (e instanceof AppError) throw mapAppError(e, event)
-      throw e
+      rethrowAsApiError(e, event)
     }
   },
 }

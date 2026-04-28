@@ -4,7 +4,7 @@ import { replayService } from '../services/replayService'
 import { permissionService } from '../services/permissionService'
 import { requireAuth, requirePermission } from '../utils/auth'
 import { apiError } from '../utils/errors'
-import { readBodyWithSchema } from '../utils/validation'
+import { getParamsWithSchema, readBodyWithSchema } from '../utils/validation'
 
 const replayEventSchema = z.object({}).passthrough()
 
@@ -22,6 +22,10 @@ const endSessionSchema = z.object({
   eventCount: z.number().int().min(0).optional(),
 })
 
+const replayIdParamSchema = z.object({
+  id: z.string().trim().min(1),
+})
+
 export const replayController = {
   getSessions(event: H3Event) {
     const user = requireAuth(event)
@@ -33,8 +37,7 @@ export const replayController = {
   getSession(event: H3Event) {
     const user = requireAuth(event)
     requirePermission(user, permissionService.canViewInsights(user), 'view replay session')
-    const id = getRouterParam(event, 'id')
-    if (!id) throw apiError('validation_error', 'id required', undefined, event)
+    const { id } = getParamsWithSchema(event, replayIdParamSchema)
 
     const data = replayService.getSession(id, user.companyId)
     if (!data) throw apiError('not_found', 'session not found', { id }, event)

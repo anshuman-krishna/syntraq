@@ -48,6 +48,20 @@ export function getQueryWithSchema<T>(event: H3Event, schema: ZodType<T>): T {
   return parsed.data
 }
 
+export function getParamsWithSchema<T>(event: H3Event, schema: ZodType<T>): T {
+  const parsed = schema.safeParse(event.context.params ?? {})
+  if (!parsed.success) {
+    throw apiError(
+      'validation_error',
+      parsed.error.issues[0]?.message ?? 'invalid input',
+      { issues: parsed.error.issues },
+      event,
+    )
+  }
+
+  return parsed.data
+}
+
 export function rethrowAsApiError(error: unknown, event: H3Event): never {
   if (error instanceof AppError) {
     throw apiError(codeForStatus(error.statusCode), error.message, undefined, event)

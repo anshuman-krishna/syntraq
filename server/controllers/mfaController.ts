@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { mfaService } from '../services/mfaService'
 import { requireAuth } from '../utils/auth'
 import { apiError } from '../utils/errors'
+import { readBodyWithSchema } from '../utils/validation'
 
 const codeSchema = z.object({ code: z.string().min(6).max(12) })
 
@@ -23,11 +24,8 @@ export const mfaController = {
 
   async verify(event: H3Event) {
     const user = requireAuth(event)
-    const parsed = codeSchema.safeParse(await readBody(event))
-    if (!parsed.success) {
-      throw apiError('validation_error', parsed.error.issues[0]?.message ?? 'invalid input', { issues: parsed.error.issues }, event)
-    }
-    const result = mfaService.verify(user.id, parsed.data.code)
+    const body = await readBodyWithSchema(event, codeSchema)
+    const result = mfaService.verify(user.id, body.code)
     if (!result.ok) {
       throw apiError('unauthenticated', 'invalid code', undefined, event)
     }
@@ -36,12 +34,9 @@ export const mfaController = {
 
   async disable(event: H3Event) {
     const user = requireAuth(event)
-    const parsed = codeSchema.safeParse(await readBody(event))
-    if (!parsed.success) {
-      throw apiError('validation_error', parsed.error.issues[0]?.message ?? 'invalid input', { issues: parsed.error.issues }, event)
-    }
-    const result = mfaService.verify(user.id, parsed.data.code)
-    if (!result.ok && !mfaService.consumeRecoveryCode(user.id, parsed.data.code)) {
+    const body = await readBodyWithSchema(event, codeSchema)
+    const result = mfaService.verify(user.id, body.code)
+    if (!result.ok && !mfaService.consumeRecoveryCode(user.id, body.code)) {
       throw apiError('unauthenticated', 'invalid code', undefined, event)
     }
     mfaService.disable(user.id)
