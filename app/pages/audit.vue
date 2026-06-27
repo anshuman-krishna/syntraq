@@ -53,9 +53,13 @@ const actionColors: Record<string, string> = {
 
 <template>
   <div class="space-y-6 animate-fade-in">
-    <div>
-      <h1 class="text-2xl font-bold text-white mb-1">audit log</h1>
-      <p class="text-sm text-white/40">track all system activity across your company</p>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-white mb-1">audit log</h1>
+        <p class="text-sm text-white/40">track all system activity across your company</p>
+      </div>
+
+      <UiExportButton entity="audit" label="export csv" />
     </div>
 
     <div v-if="loading" class="flex items-center justify-center py-20">

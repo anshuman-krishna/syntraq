@@ -51,6 +51,8 @@ const statuses: Array<ShiftStatus | 'all'> = ['all', 'scheduled', 'active', 'com
           {{ status }}
         </button>
       </div>
+
+      <RosterSavedViews />
     </div>
   </div>
 </template>

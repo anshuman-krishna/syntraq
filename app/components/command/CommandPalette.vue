@@ -3,9 +3,16 @@ const ui = useUiStore()
 const router = useRouter()
 const { startTutorial } = useTutorials()
 const chat = useChatStore()
+const { results: searchResults, run: runSearch, clear: clearSearch } = useSearch()
 const query = ref('')
 const selectedIndex = ref(0)
 const inputRef = ref<HTMLInputElement | null>(null)
+
+const resultIcons: Record<string, string> = {
+  employee: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+  vehicle: 'M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1',
+  workflow: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z',
+}
 
 interface CommandItem {
   id: string
@@ -156,10 +163,16 @@ function executeCommand(cmd: CommandItem) {
   close()
 }
 
+function openResult(result: SearchResult) {
+  router.push(result.route)
+  close()
+}
+
 function close() {
   ui.closeCommand()
   query.value = ''
   selectedIndex.value = 0
+  clearSearch()
 }
 
 function handleKeydown(e: KeyboardEvent) {
@@ -176,8 +189,11 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-watch(query, () => {
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+watch(query, (val) => {
   selectedIndex.value = 0
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => runSearch(val), 150)
 })
 
 watch(() => ui.commandOpen, (open) => {
@@ -256,7 +272,25 @@ onUnmounted(() => {
             </template>
           </div>
 
-          <div v-else class="p-6 text-center">
+          <div v-if="searchResults.length" class="px-2 pb-2 max-h-72 overflow-y-auto">
+            <p class="px-3 pt-2 pb-1 text-[10px] font-medium text-white/20 uppercase tracking-wider">results</p>
+            <button
+              v-for="result in searchResults"
+              :key="result.type + result.id"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-white/50 hover:bg-glass-white/50 hover:text-white/70 transition-all duration-150"
+              @click="openResult(result)"
+            >
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" :d="resultIcons[result.type]" />
+              </svg>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm truncate">{{ result.label }}</p>
+                <p class="text-xs text-white/30 truncate">{{ result.type }} · {{ result.sublabel }}</p>
+              </div>
+            </button>
+          </div>
+
+          <div v-if="!filteredCommands.length && !searchResults.length" class="p-6 text-center">
             <p class="text-sm text-white/30">no results found</p>
           </div>
 

@@ -55,6 +55,15 @@ export const permissionService = {
     return hasMinRole(user, 'admin')
   },
 
+  // maintenance
+  canViewMaintenance(user: UserContext): boolean {
+    return hasMinRole(user, 'operator')
+  },
+
+  canManageMaintenance(user: UserContext): boolean {
+    return hasMinRole(user, 'manager')
+  },
+
   // company management
   canManageCompany(user: UserContext): boolean {
     return hasMinRole(user, 'admin')

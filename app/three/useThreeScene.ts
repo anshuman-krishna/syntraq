@@ -61,9 +61,28 @@ export function useThreeScene(options: ThreeSceneOptions = {}) {
     callbacks.push(cb)
   }
 
+  function disposeMaterial(material: THREE.Material) {
+    // textures hang off material slots (map, normalMap, etc.) and leak unless freed
+    for (const value of Object.values(material) as unknown[]) {
+      if (value instanceof THREE.Texture) value.dispose()
+    }
+    material.dispose()
+  }
+
+  function disposeSceneResources(target: THREE.Scene) {
+    target.traverse((object) => {
+      const mesh = object as THREE.Mesh
+      if (mesh.geometry) mesh.geometry.dispose()
+      const material = mesh.material
+      if (Array.isArray(material)) material.forEach(disposeMaterial)
+      else if (material) disposeMaterial(material)
+    })
+  }
+
   function dispose() {
     if (animationId !== null) cancelAnimationFrame(animationId)
     window.removeEventListener('resize', handleResize)
+    if (scene) disposeSceneResources(scene)
     renderer?.dispose()
     renderer?.domElement.remove()
     renderer = null

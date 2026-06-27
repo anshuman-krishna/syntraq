@@ -303,3 +303,42 @@ export const automations = sqliteTable('automations', {
   createdBy: text('created_by').notNull().references(() => users.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 })
+
+export const maintenanceRecords = sqliteTable('maintenance_records', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id),
+  vehicleId: text('vehicle_id').notNull().references(() => vehicles.id),
+  type: text('type', { enum: ['service', 'inspection', 'repair'] }).notNull(),
+  date: text('date').notNull(),
+  odometer: integer('odometer'),
+  // stored in cents to avoid floating-point drift
+  cost: integer('cost'),
+  status: text('status', { enum: ['scheduled', 'in-progress', 'completed'] }).notNull().default('completed'),
+  notes: text('notes'),
+  createdBy: text('created_by').notNull().references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
+export const shiftTemplates = sqliteTable('shift_templates', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id),
+  name: text('name').notNull(),
+  employeeId: text('employee_id').notNull().references(() => employees.id),
+  vehicleId: text('vehicle_id').references(() => vehicles.id),
+  startTime: text('start_time').notNull(),
+  endTime: text('end_time').notNull(),
+  // json array of weekday numbers, 0 = sunday
+  weekdays: text('weekdays').notNull().default('[]'),
+  createdBy: text('created_by').notNull().references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
+export const savedViews = sqliteTable('saved_views', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  companyId: text('company_id').notNull().references(() => companies.id),
+  name: text('name').notNull(),
+  // json snapshot of the roster filter state
+  filters: text('filters').notNull().default('{}'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})

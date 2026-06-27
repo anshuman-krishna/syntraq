@@ -31,3 +31,6 @@ db.sqlite-shm
 
 # testing and validation
 /testing/
+
+# local agent / editor workspace
+.claude/
