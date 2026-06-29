@@ -9,6 +9,9 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // csrf does not apply there. keep this list tight.
 const EXEMPT_EXACT = new Set([
   '/api/billing/webhook',
+  // unauthenticated error telemetry — must accept reports before a csrf cookie
+  // exists (e.g. a crash on first paint). bounded by the rate limiter.
+  '/api/monitoring/client-error',
 ])
 
 function isExempt(path: string): boolean {

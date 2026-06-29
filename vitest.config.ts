@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.{test,spec}.ts'],
+    // e2e specs run under playwright, not vitest
+    exclude: ['tests/e2e/**', 'node_modules/**'],
     globals: false,
     setupFiles: ['tests/setup.ts'],
     coverage: {

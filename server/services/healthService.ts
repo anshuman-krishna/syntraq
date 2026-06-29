@@ -2,6 +2,10 @@ import { db } from '../db/client'
 import { companies } from '../db/schema'
 import { cacheService } from './cacheService'
 
+function configCheck(value: string | undefined): { status: string; message: string } {
+  return { status: 'ok', message: value ? 'configured' : 'not configured' }
+}
+
 export const healthService = {
   check() {
     const checks: Record<string, { status: string; message?: string }> = {}
@@ -29,6 +33,12 @@ export const healthService = {
 
     // uptime
     checks.uptime = { status: 'ok', message: `${Math.round(process.uptime())}s` }
+
+    // integration config presence — surfaced so ops can see what's wired without
+    // making a live network call on every health check.
+    checks.stripe = configCheck(process.env.STRIPE_SECRET_KEY)
+    checks.ai = configCheck(process.env.ANTHROPIC_API_KEY)
+    checks.errorSink = configCheck(process.env.ERROR_WEBHOOK_URL)
 
     const overallStatus = Object.values(checks).some(c => c.status === 'error') ? 'degraded' : 'healthy'
 

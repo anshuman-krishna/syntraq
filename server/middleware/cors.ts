@@ -27,6 +27,12 @@ export default defineEventHandler((event) => {
     setResponseHeader(event, 'Access-Control-Max-Age', 86400)
   }
 
+  // read responses are per-tenant (bearer-scoped), so only a private client cache
+  // is safe — never a shared/cdn cache that could serve one tenant's data to another.
+  if (getMethod(event) === 'GET') {
+    setResponseHeader(event, 'Cache-Control', 'private, max-age=30')
+  }
+
   if (getMethod(event) === 'OPTIONS') {
     setResponseStatus(event, 204)
     return ''
