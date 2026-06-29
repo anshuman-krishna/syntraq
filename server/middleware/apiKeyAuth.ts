@@ -1,4 +1,7 @@
 import { apiKeyService } from '../services/apiKeyService'
+import { apiUsageModel } from '../models/apiUsageModel'
+import { generateId } from '../../shared/utils/id'
+import { loggerService } from '../services/loggerService'
 
 // extends H3EventContext with api key info
 declare module 'h3' {
@@ -37,4 +40,22 @@ export default defineEventHandler(async (event) => {
     companyId: result.companyId,
     permissions: result.permissions as Record<string, boolean | undefined>,
   }
+
+  // record usage once the response is flushed — never block or fail the request.
+  const start = Date.now()
+  event.node.res.on('finish', () => {
+    try {
+      apiUsageModel.create({
+        id: generateId(),
+        apiKeyId: result.keyId,
+        companyId: result.companyId,
+        method: getMethod(event),
+        path,
+        statusCode: event.node.res.statusCode,
+        responseTime: Date.now() - start,
+      })
+    } catch (e) {
+      loggerService.error('failed to record api usage', { error: e instanceof Error ? e.message : 'unknown' })
+    }
+  })
 })

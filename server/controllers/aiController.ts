@@ -23,7 +23,7 @@ export const aiController = {
       companyId: user.companyId,
     }
 
-    const response = aiService.processMessage(body.message, context)
+    const response = await aiService.respond(body.message, context)
     if (!response) {
       throw apiError('internal_error', 'ai response unavailable', undefined, event)
     }

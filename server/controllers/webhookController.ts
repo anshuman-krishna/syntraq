@@ -118,4 +118,28 @@ export const webhookController = {
     const logs = webhookService.getLogs(query.webhookId, user.companyId)
     return { logs }
   },
+
+  async test(event: H3Event) {
+    const user = requireAuth(event)
+    requirePermission(user, permissionService.canManageCompany(user), 'test webhook')
+
+    const body = await readBodyWithSchema(event, webhookIdSchema)
+
+    try {
+      const result = await webhookService.testPing(body.id, user.companyId)
+
+      auditService.log({
+        companyId: user.companyId,
+        userId: user.id,
+        action: 'webhook.tested',
+        entityType: 'webhook',
+        entityId: body.id,
+        metadata: { status: result.status, ok: result.ok },
+      })
+
+      return { result }
+    } catch (e) {
+      rethrowAsApiError(e, event)
+    }
+  },
 }

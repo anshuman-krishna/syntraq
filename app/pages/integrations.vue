@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const activeTab = ref<'api-keys' | 'webhooks' | 'automations'>('api-keys')
+const activeTab = ref<'api-keys' | 'webhooks' | 'automations' | 'usage'>('api-keys')
 const ui = useUiStore()
 
 // api keys state
@@ -29,6 +29,8 @@ const webhooks = ref<Array<{
 const showCreateWebhook = ref(false)
 const newWebhookUrl = ref('')
 const newWebhookEvents = ref<string[]>([])
+const testingWebhookId = ref<string | null>(null)
+const webhookTestResults = ref<Record<string, { ok: boolean; status: number; responseTime: number; error?: string }>>({})
 
 // automations state
 const automations = ref<Array<{
@@ -131,6 +133,27 @@ async function createWebhook() {
   }
 }
 
+async function testWebhook(id: string) {
+  testingWebhookId.value = id
+  try {
+    const data = await $fetch<{ result: { ok: boolean; status: number; responseTime: number; error?: string } }>(
+      '/api/webhooks/test',
+      { method: 'POST', body: { id } },
+    )
+    webhookTestResults.value[id] = data.result
+    ui.addToast({
+      type: data.result.ok ? 'success' : 'error',
+      message: data.result.ok
+        ? `test delivered (${data.result.status}, ${data.result.responseTime}ms)`
+        : `test failed (${data.result.error ?? data.result.status})`,
+    })
+  } catch {
+    ui.addToast({ type: 'error', message: 'failed to send test event' })
+  } finally {
+    testingWebhookId.value = null
+  }
+}
+
 async function toggleWebhook(id: string, active: boolean) {
   try {
     await $fetch('/api/webhooks/update', { method: 'PUT', body: { id, active: !active } })
@@ -222,7 +245,7 @@ function formatDate(date: string | null) {
     <!-- tabs -->
     <div class="flex gap-1 p-1 rounded-xl bg-glass-white/50 w-fit">
       <button
-        v-for="tab in (['api-keys', 'webhooks', 'automations'] as const)"
+        v-for="tab in (['api-keys', 'webhooks', 'automations', 'usage'] as const)"
         :key="tab"
         class="px-4 py-2 rounded-lg text-sm transition-all duration-200"
         :class="activeTab === tab
@@ -390,8 +413,23 @@ function formatDate(date: string | null) {
               <span v-if="wh.failureCount > 0" class="text-peach-glow/60">{{ wh.failureCount }} failures</span>
               <span>last triggered {{ formatDate(wh.lastTriggeredAt) }}</span>
             </div>
+            <div
+              v-if="webhookTestResults[wh.id]"
+              class="text-[11px]"
+              :class="webhookTestResults[wh.id]?.ok ? 'text-mint/60' : 'text-red-400/60'"
+            >
+              test: {{ webhookTestResults[wh.id]?.ok ? 'delivered' : 'failed' }}
+              ({{ webhookTestResults[wh.id]?.status }}, {{ webhookTestResults[wh.id]?.responseTime }}ms)
+            </div>
           </div>
           <div class="flex items-center gap-2 shrink-0">
+            <button
+              class="px-3 py-1.5 rounded-lg text-xs text-sky-pastel/60 hover:bg-sky-pastel/[0.06] transition-all disabled:opacity-40"
+              :disabled="testingWebhookId === wh.id"
+              @click="testWebhook(wh.id)"
+            >
+              {{ testingWebhookId === wh.id ? 'sending…' : 'send test' }}
+            </button>
             <button
               class="px-3 py-1.5 rounded-lg text-xs transition-all"
               :class="wh.active
@@ -508,5 +546,8 @@ function formatDate(date: string | null) {
         no automations yet. create one to automate workflows.
       </p>
     </div>
+
+    <!-- usage tab -->
+    <IntegrationsApiUsage v-if="activeTab === 'usage'" />
   </div>
 </template>

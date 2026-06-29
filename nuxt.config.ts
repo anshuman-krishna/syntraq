@@ -75,6 +75,8 @@ export default defineNuxtConfig({
     tursoToken: process.env.TURSO_AUTH_TOKEN || '',
     stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+    aiModel: process.env.AI_MODEL || 'claude-opus-4-8',
     emailProvider: process.env.EMAIL_PROVIDER || '',
     emailApiKey: process.env.EMAIL_API_KEY || '',
     emailFrom: process.env.EMAIL_FROM || 'noreply@syntraq.io',

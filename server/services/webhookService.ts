@@ -91,6 +91,65 @@ export const webhookService = {
     return webhookModel.findLogs(webhookId, companyId)
   },
 
+  // fire a one-off sample payload at a webhook and return the result inline.
+  // unlike dispatch, this awaits the response and never touches failureCount —
+  // a failing test ping should not auto-disable a real endpoint.
+  async testPing(id: string, companyId: string) {
+    const webhook = webhookModel.findById(id, companyId)
+    if (!webhook) throw new AppError('webhook not found', 404)
+
+    const payload: WebhookEventPayload = {
+      event: 'test.ping',
+      timestamp: new Date().toISOString(),
+      data: { message: 'this is a test event from syntraq', webhookId: id },
+    }
+
+    const body = JSON.stringify(payload)
+    const signature = signPayload(body, webhook.secret)
+    const start = Date.now()
+
+    try {
+      const response = await fetch(webhook.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Webhook-Signature': signature,
+          'X-Webhook-Event': 'test.ping',
+        },
+        body,
+        signal: AbortSignal.timeout(DELIVERY_TIMEOUT),
+      })
+
+      const responseTime = Date.now() - start
+
+      webhookModel.createLog({
+        id: generateId(),
+        webhookId: id,
+        companyId,
+        eventType: 'test.ping',
+        status: response.status,
+        responseTime,
+      })
+
+      return { ok: response.ok, status: response.status, responseTime }
+    } catch (error) {
+      const responseTime = Date.now() - start
+      const message = error instanceof Error ? error.message : 'unknown error'
+
+      webhookModel.createLog({
+        id: generateId(),
+        webhookId: id,
+        companyId,
+        eventType: 'test.ping',
+        status: 0,
+        responseTime,
+        error: message,
+      })
+
+      return { ok: false, status: 0, responseTime, error: message }
+    }
+  },
+
   // fire event to all matching webhooks for a company
   async dispatch(companyId: string, eventType: string, data: Record<string, unknown>) {
     const activeWebhooks = webhookModel.findActive(companyId)

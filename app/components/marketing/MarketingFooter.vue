@@ -21,7 +21,6 @@
           <div class="space-y-2.5">
             <NuxtLink to="/features" class="block text-sm text-white/35 hover:text-white/70 transition-base">features</NuxtLink>
             <NuxtLink to="/pricing" class="block text-sm text-white/35 hover:text-white/70 transition-base">pricing</NuxtLink>
-            <span class="block text-sm text-white/20">integrations (coming soon)</span>
           </div>
         </div>
 
@@ -30,8 +29,6 @@
           <h4 class="text-xs font-semibold text-white/60 uppercase tracking-wider mb-4">company</h4>
           <div class="space-y-2.5">
             <NuxtLink to="/about" class="block text-sm text-white/35 hover:text-white/70 transition-base">about</NuxtLink>
-            <span class="block text-sm text-white/20">blog (coming soon)</span>
-            <span class="block text-sm text-white/20">careers (coming soon)</span>
           </div>
         </div>
 
@@ -48,6 +45,7 @@
       <div class="pt-8 border-t border-glass-border flex flex-col md:flex-row items-center justify-between gap-4">
         <p class="text-xs text-white/20">&copy; {{ new Date().getFullYear() }} syntraq. all rights reserved.</p>
         <div class="flex items-center gap-6 text-white/20">
+          <UiStatusStrip />
           <span class="text-xs">built for the field</span>
         </div>
       </div>

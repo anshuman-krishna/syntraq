@@ -333,6 +333,14 @@ export const shiftTemplates = sqliteTable('shift_templates', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 })
 
+export const notificationPreferences = sqliteTable('notification_preferences', {
+  userId: text('user_id').primaryKey().references(() => users.id),
+  companyId: text('company_id').notNull().references(() => companies.id),
+  // json map of notification type → enabled. a missing type defaults to enabled.
+  preferences: text('preferences').notNull().default('{}'),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
 export const savedViews = sqliteTable('saved_views', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => users.id),

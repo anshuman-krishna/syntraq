@@ -2,6 +2,7 @@ import { generateId } from '../../shared/utils/id'
 import type { ChatMessage } from '../../shared/types/ai'
 import { predictionService } from './predictionService'
 import { anomalyService } from './anomalyService'
+import { llmService } from './llmService'
 
 interface ChatContext {
   route: string
@@ -207,6 +208,33 @@ function generateResponse(message: string, context: ChatContext): string {
   return moduleMap?.default ?? 'i can help with roster management, shift scheduling, fleet tracking, anomaly detection, and workflow generation. what would you like to know?'
 }
 
+// grounds the llm with who syntraq is, where the user is, and a compact
+// snapshot of the company's live anomalies and scheduling suggestions.
+function buildSystemPrompt(context: ChatContext): string {
+  const module = context.module ?? detectModule(context.route)
+  const lines = [
+    'you are the syntraq assistant, an in-app guide for an operations platform used by trucking, hydrovac, and field-service companies.',
+    'help users navigate the product and reason about their operations. be concise, practical, and friendly — lowercase is fine. never invent data you were not given.',
+    `the user is on the "${module}" screen (route ${context.route}).`,
+  ]
+
+  if (context.companyId) {
+    const anomalies = anomalyService.detect(context.companyId).slice(0, 5)
+    if (anomalies.length) {
+      lines.push('current operational anomalies:')
+      anomalies.forEach(a => lines.push(`- [${a.severity}] ${a.title}: ${a.description}`))
+    }
+
+    const predictions = predictionService.getPredictions(context.companyId).slice(0, 5)
+    if (predictions.length) {
+      lines.push('current scheduling suggestions:')
+      predictions.forEach(p => lines.push(`- ${p.title}: ${p.description}`))
+    }
+  }
+
+  return lines.join('\n')
+}
+
 export const aiService = {
   processMessage(message: string, context: ChatContext): ChatMessage {
     const content = generateResponse(message, context)
@@ -216,6 +244,18 @@ export const aiService = {
       content,
       timestamp: new Date().toISOString(),
     }
+  },
+
+  // llm-backed reply when a provider is configured; otherwise the heuristic.
+  async respond(message: string, context: ChatContext): Promise<ChatMessage> {
+    if (llmService.isConfigured()) {
+      const content = await llmService.complete(buildSystemPrompt(context), [{ role: 'user', content: message }])
+      if (content) {
+        return { id: generateId(), role: 'assistant', content, timestamp: new Date().toISOString() }
+      }
+    }
+
+    return this.processMessage(message, context)
   },
 
   // generate a workflow from natural language
