@@ -99,7 +99,7 @@ const statusColors: Record<MaintenanceRecord['status'], string> = {
 }
 
 function formatCost(cents: number | null) {
-  if (cents === null) return '—'
+  if (cents === null) return '-'
   return `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 

@@ -4,10 +4,10 @@ definePageMeta({
 })
 
 useHead({
-  title: 'features — syntraq',
+  title: 'features - syntraq',
   meta: [
     { name: 'description', content: 'explore syntraq features: roster management, smart dispatch, AI assistant, workflow builder, session replay, real-time fleet visibility, and more.' },
-    { property: 'og:title', content: 'features — syntraq' },
+    { property: 'og:title', content: 'features - syntraq' },
     { property: 'og:description', content: 'everything your field-service team needs in one premium platform.' },
   ],
 })
@@ -15,7 +15,7 @@ useHead({
 const coreFeatures = [
   {
     title: 'roster manager',
-    description: 'build, manage, and optimize crew schedules with drag-and-drop simplicity. see who\'s available, who\'s on shift, and where gaps exist — all in real time.',
+    description: 'build, manage, and optimize crew schedules with drag-and-drop simplicity. see who\'s available, who\'s on shift, and where gaps exist - all in real time.',
     highlights: ['drag-and-drop scheduling', 'availability tracking', 'conflict detection', 'timeline and 3d views'],
     icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
     color: 'sky-pastel',
@@ -23,7 +23,7 @@ const coreFeatures = [
   },
   {
     title: 'workflow builder',
-    description: 'create custom operational workflows without code. pre-trip inspections, onboarding checklists, maintenance routines — define the steps, syntraq handles the rest.',
+    description: 'create custom operational workflows without code. pre-trip inspections, onboarding checklists, maintenance routines - define the steps, syntraq handles the rest.',
     highlights: ['no-code step builder', 'reusable templates', 'status tracking', 'team assignment'],
     icon: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z',
     color: 'mint',

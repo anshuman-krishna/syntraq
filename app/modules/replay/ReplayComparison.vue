@@ -93,7 +93,7 @@ const winnerColors: Record<string, string> = {
         >
           <option value="" disabled>select session</option>
           <option v-for="s in sessions" :key="s.id" :value="s.id">
-            {{ s.userName }} — {{ s.route }} ({{ s.eventCount }} events)
+            {{ s.userName }} - {{ s.route }} ({{ s.eventCount }} events)
           </option>
         </select>
       </div>
@@ -108,7 +108,7 @@ const winnerColors: Record<string, string> = {
         >
           <option value="" disabled>select session</option>
           <option v-for="s in sessions" :key="s.id" :value="s.id">
-            {{ s.userName }} — {{ s.route }} ({{ s.eventCount }} events)
+            {{ s.userName }} - {{ s.route }} ({{ s.eventCount }} events)
           </option>
         </select>
       </div>

@@ -88,7 +88,7 @@ const roleColors: Record<string, string> = {
           <td class="py-3 px-4">
             <template v-if="roster.getLatestShift(employee.id)">
               <span class="text-sm text-white/50">
-                {{ roster.getLatestShift(employee.id)!.startTime }} — {{ roster.getLatestShift(employee.id)!.endTime }}
+                {{ roster.getLatestShift(employee.id)!.startTime }} - {{ roster.getLatestShift(employee.id)!.endTime }}
               </span>
             </template>
             <span v-else class="text-sm text-white/25">no shift</span>

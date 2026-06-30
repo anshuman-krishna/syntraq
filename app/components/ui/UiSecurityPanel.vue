@@ -181,7 +181,7 @@ onMounted(refresh)
       </div>
 
       <div v-else-if="recoveryCodes.length" class="space-y-3">
-        <p class="text-xs text-white/60">save these recovery codes somewhere safe — they won't be shown again.</p>
+        <p class="text-xs text-white/60">save these recovery codes somewhere safe. they won't be shown again.</p>
         <div class="grid grid-cols-2 gap-2 p-3 rounded-xl bg-glass-white/50 font-mono text-[11px] text-white/80">
           <span v-for="code in recoveryCodes" :key="code">{{ code }}</span>
         </div>
@@ -216,7 +216,7 @@ onMounted(refresh)
         >
           <div class="text-xs">
             <p class="text-white/80 capitalize">{{ a.provider }}</p>
-            <p class="text-white/30">{{ a.email ?? '—' }}</p>
+            <p class="text-white/30">{{ a.email ?? '-' }}</p>
           </div>
           <button
             class="text-[11px] text-red-400/60 hover:text-red-400 transition-colors"

@@ -4,7 +4,7 @@ definePageMeta({
 })
 
 useHead({
-  title: 'checkout cancelled — syntraq',
+  title: 'checkout cancelled - syntraq',
 })
 </script>
 
@@ -20,7 +20,7 @@ useHead({
       <div>
         <h1 class="text-2xl font-bold text-white mb-2">checkout cancelled</h1>
         <p class="text-sm text-white/40 leading-relaxed">
-          no worries — you can upgrade anytime from your settings. your current plan remains active.
+          no worries - you can upgrade anytime from your settings. your current plan remains active.
         </p>
       </div>
 

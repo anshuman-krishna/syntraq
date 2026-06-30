@@ -5,11 +5,12 @@ const mobileOpen = ref(false)
 const links = [
   { label: 'features', path: '/features' },
   { label: 'pricing', path: '/pricing' },
+  { label: 'blog', path: '/blog' },
   { label: 'about', path: '/about' },
 ]
 
 function isActive(path: string) {
-  return route.path === path
+  return route.path === path || route.path.startsWith(`${path}/`)
 }
 </script>
 

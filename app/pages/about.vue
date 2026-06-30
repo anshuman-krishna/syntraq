@@ -4,10 +4,10 @@ definePageMeta({
 })
 
 useHead({
-  title: 'about — syntraq',
+  title: 'about - syntraq',
   meta: [
     { name: 'description', content: 'syntraq is building the future of field-service operations. learn about our mission to replace chaos with clarity for trucking, hydrovac, and service companies.' },
-    { property: 'og:title', content: 'about — syntraq' },
+    { property: 'og:title', content: 'about - syntraq' },
     { property: 'og:description', content: 'building the future of field-service operations.' },
   ],
 })
@@ -20,7 +20,7 @@ const values = [
   },
   {
     title: 'built for the field',
-    description: 'every feature is tested against real operational scenarios. we don\'t build for demos — we build for 5am dispatches and muddy job sites.',
+    description: 'every feature is tested against real operational scenarios. we don\'t build for demos - we build for 5am dispatches and muddy job sites.',
     icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
   },
   {

@@ -16,7 +16,7 @@ export const tutorials: Record<string, Tutorial> = {
         id: 'stats-overview',
         target: '[data-tutorial="stats"]',
         title: 'operational stats',
-        content: 'these cards show your key metrics at a glance — active drivers, dispatches, inspections, and utilization.',
+        content: 'these cards show your key metrics at a glance: active drivers, dispatches, inspections, and utilization.',
         placement: 'bottom',
       },
     ],

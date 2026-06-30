@@ -111,7 +111,7 @@ export function useOfflineQueue() {
       // only queue write operations
       if (method !== 'GET' && !online.value) {
         enqueue(url, method, options.body)
-        ui.addToast({ type: 'info', message: 'saved offline — will sync when connected' })
+        ui.addToast({ type: 'info', message: 'saved offline, will sync when connected' })
         return null
       }
       throw e
@@ -131,7 +131,7 @@ export function useOfflineQueue() {
 
     window.addEventListener('offline', () => {
       online.value = false
-      ui.addToast({ type: 'info', message: 'you are offline — changes will be saved locally' })
+      ui.addToast({ type: 'info', message: 'you are offline, changes will be saved locally' })
     })
 
     // process any pending items on load

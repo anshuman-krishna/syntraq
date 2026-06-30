@@ -81,7 +81,7 @@ export function useRealtime() {
       const actionLabel = event.type.replace(/_/g, ' ')
       ui.addToast({
         type: 'info',
-        message: `${event.userName} — ${actionLabel}`,
+        message: `${event.userName} - ${actionLabel}`,
       })
     }
   }

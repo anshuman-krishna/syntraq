@@ -4,7 +4,7 @@ definePageMeta({
 })
 
 useHead({
-  title: 'subscription confirmed — syntraq',
+  title: 'subscription confirmed - syntraq',
 })
 
 const route = useRoute()

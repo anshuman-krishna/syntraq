@@ -29,6 +29,7 @@
           <h4 class="text-xs font-semibold text-white/60 uppercase tracking-wider mb-4">company</h4>
           <div class="space-y-2.5">
             <NuxtLink to="/about" class="block text-sm text-white/35 hover:text-white/70 transition-base">about</NuxtLink>
+            <NuxtLink to="/blog" class="block text-sm text-white/35 hover:text-white/70 transition-base">blog</NuxtLink>
           </div>
         </div>
 

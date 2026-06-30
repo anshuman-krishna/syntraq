@@ -1,4 +1,9 @@
-const publicRoutes = ['/', '/login', '/register', '/features', '/pricing', '/about', '/billing/success', '/billing/cancel']
+const publicRoutes = ['/', '/login', '/register', '/features', '/pricing', '/about', '/blog', '/billing/success', '/billing/cancel']
+
+// the marketing blog is public, including individual posts under /blog/<slug>.
+function isPublicRoute(path: string) {
+  return publicRoutes.includes(path) || path.startsWith('/blog/')
+}
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuthStore()
@@ -7,7 +12,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await auth.fetchUser()
   }
 
-  if (!auth.isAuthenticated && !publicRoutes.includes(to.path)) {
+  if (!auth.isAuthenticated && !isPublicRoute(to.path)) {
     return navigateTo('/login')
   }
 

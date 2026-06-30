@@ -57,7 +57,7 @@ async function goToStep(stepId: string) {
     if (data.completed) {
       completed.value = true
       visible.value = false
-      ui.addToast({ type: 'success', message: 'onboarding complete — welcome to syntraq' })
+      ui.addToast({ type: 'success', message: 'onboarding complete. welcome to syntraq' })
     }
   } catch {
     // non-critical

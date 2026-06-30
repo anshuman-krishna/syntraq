@@ -85,7 +85,7 @@ onMounted(() => {
             <RosterScene />
           </ClientOnly>
           <div class="absolute bottom-4 left-4 text-xs text-white/30">
-            move mouse to explore — shift blocks represent scheduled time
+            move mouse to explore - shift blocks represent scheduled time
           </div>
         </div>
       </template>

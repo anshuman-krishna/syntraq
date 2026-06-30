@@ -99,7 +99,7 @@ async function createApiKey() {
     })
     createdKey.value = data.key.key
     newKeyName.value = ''
-    ui.addToast({ type: 'success', message: 'api key created — copy it now, it won\'t be shown again' })
+    ui.addToast({ type: 'success', message: 'api key created - copy it now, it won\'t be shown again' })
     await loadApiKeys()
   } catch {
     ui.addToast({ type: 'error', message: 'failed to create api key' })
@@ -308,7 +308,7 @@ function formatDate(date: string | null) {
 
         <!-- show created key -->
         <div v-if="createdKey" class="mt-4 p-3 rounded-xl bg-mint/5 border border-mint/20">
-          <p class="text-xs text-mint/70 mb-2">copy this key now — it won't be shown again</p>
+          <p class="text-xs text-mint/70 mb-2">copy this key now - it won't be shown again</p>
           <div class="flex items-center gap-2">
             <code class="flex-1 text-xs text-mint bg-black/20 px-3 py-2 rounded-lg break-all">{{ createdKey }}</code>
             <button

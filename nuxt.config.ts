@@ -9,6 +9,14 @@ export default defineNuxtConfig({
     '@vite-pwa/nuxt',
   ],
 
+  // three.js scene files are referenced by bare name (e.g. <HeroScene>), so the
+  // three/ dir registers without a path prefix. everything else keeps the default
+  // prefixed naming (e.g. <MarketingNavbar>, <IntelligenceAnomalyBadges>).
+  components: [
+    { path: '~/components/three', pathPrefix: false },
+    { path: '~/components', pathPrefix: true },
+  ],
+
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
@@ -117,11 +125,5 @@ export default defineNuxtConfig({
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap' },
       ],
     },
-  },
-
-  dir: {
-    pages: 'app/pages',
-    layouts: 'app/layouts',
-    middleware: 'app/middleware',
   },
 })

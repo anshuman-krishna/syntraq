@@ -133,7 +133,7 @@ onMounted(async () => {
       activity.value.unshift({
         id: Date.now().toString(),
         type: actionType,
-        description: `${event.userName} — ${event.type.replace(/_/g, ' ')}`,
+        description: `${event.userName} - ${event.type.replace(/_/g, ' ')}`,
         timestamp: event.timestamp,
       })
       // keep list trimmed
@@ -214,7 +214,7 @@ onBeforeUnmount(() => {
     <UiCard v-if="!loading" padding="none" class="overflow-hidden">
       <div class="flex items-center justify-between px-4 pt-4">
         <h2 class="text-sm font-semibold text-white/70">fleet overview</h2>
-        <span class="text-[10px] text-white/25">interactive 3d view — hover to explore</span>
+        <span class="text-[10px] text-white/25">interactive 3d view - hover to explore</span>
       </div>
       <div class="h-[320px] relative">
         <ClientOnly>
