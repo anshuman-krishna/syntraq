@@ -29,9 +29,10 @@ export default defineNuxtConfig({
       orientation: 'portrait',
       start_url: '/dashboard',
       icons: [
-        { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-        { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
-        { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        { src: '/pwa-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+        { src: '/pwa-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
+        { src: '/pwa-512x512.svg', sizes: 'any', type: 'image/svg+xml' },
+        { src: '/pwa-maskable-512x512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
       ],
     },
     workbox: {
